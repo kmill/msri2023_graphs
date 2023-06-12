@@ -38,3 +38,14 @@ lemma IsSeparator_iff :
     exact Walk.support_toPath_subset _ hsp
   · intro hs a ha b hb p
     exact hs a ha b hb p
+
+/-- Another characterization of the disjointness axiom of a connector. -/
+lemma Connector.disjoint' {G : SimpleGraph V} (C : G.Connector A B)
+    (p q : G.PathBetween A B) (hp : p ∈ C.paths) (hq : q ∈ C.paths)
+    (v : V) (hvp : v ∈ p.path.1.support) (hvq : v ∈ q.path.1.support) :
+    p = q := by
+  by_contra hpq
+  have := C.disjoint hp hq hpq
+  rw [Function.onFun, Set.disjoint_iff_forall_ne] at this
+  exact this hvp hvq rfl
+  
