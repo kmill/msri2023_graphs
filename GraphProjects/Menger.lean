@@ -25,3 +25,16 @@ structure PathBetween (G : SimpleGraph V) (A B : Set V) where
 structure Connector (G : SimpleGraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
   disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.support}
+
+/-- Separators via `Path` is the same as separators via `Walk`. -/
+lemma IsSeparator_iff :
+    IsSeparator G A B S ↔
+      ∀ a ∈ A, ∀ b ∈ B, ∀ p : G.Walk a b, ∃ s ∈ S, s ∈ p.support := by
+  classical
+  constructor
+  · intro hs a ha b hb p
+    obtain ⟨s, hs, hsp⟩ := hs a ha b hb p.toPath
+    use s, hs
+    exact Walk.support_toPath_subset _ hsp
+  · intro hs a ha b hb p
+    exact hs a ha b hb p
