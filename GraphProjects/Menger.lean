@@ -5,6 +5,7 @@ Authors: Swaroop Hegde, Sung-Yi Liao, Kyle Miller, Jake Weber, Jack Wesley
 -/
 
 import Mathlib.Combinatorics.SimpleGraph.Connectivity
+import Mathlib.SetTheory.Cardinal.Basic
 
 /-! # Menger's theorem for simple graphs
 
@@ -26,6 +27,8 @@ structure Connector (G : SimpleGraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
   disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.support}
 
+
+
 /-- Separators via `Path` is the same as separators via `Walk`. -/
 lemma IsSeparator_iff :
     IsSeparator G A B S ↔
@@ -38,3 +41,11 @@ lemma IsSeparator_iff :
     exact Walk.support_toPath_subset _ hsp
   · intro hs a ha b hb p
     exact hs a ha b hb p
+
+open scoped Cardinal
+
+theorem Menger: 
+    IsSeparator G A B S ∧ (∀ T : Set V, (#T) ≥ (#S)) ∨ (¬ IsSeparator G A B T) → 
+      ∃ C : Connector G A B, (#C.paths) = (#S) := by 
+  sorry
+
