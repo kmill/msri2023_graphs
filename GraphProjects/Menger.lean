@@ -52,7 +52,12 @@ lemma Connector.disjoint' {G : SimpleGraph V} (C : G.Connector A B)
   exact this hvp hvq rfl
 
 /-- There are finitely many paths between `A` and `B` in a finite graph. -/
-instance [Fintype V] [DecidableEq V] (G : SimpleGraph V) [DecidableRel G.Adj]
+instance foo [Fintype V] [DecidableEq V] (G : SimpleGraph V) [DecidableRel G.Adj]
     (A B : Set V) [DecidablePred (· ∈ A)] [DecidablePred (· ∈ B)] :
     Fintype (G.PathBetween A B) :=
   derive_fintype% (G.PathBetween A B)
+
+instance [Finite V] (G : SimpleGraph V) (A B : Set V) : Finite (G.PathBetween A B) := by
+  classical
+  have := Fintype.ofFinite V
+  infer_instance
