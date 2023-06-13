@@ -50,7 +50,7 @@ structure Connector (G : SimpleGraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
   disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.interiorSupport}
 
-@[simps]
+@[simps] --PathBetween for vertex in A ∩ B 
 def PathBetween.ofVertex (G : SimpleGraph V) (A B : Set V) (v : V) (h : v ∈ A ∩ B) : G.PathBetween A B where
   first := v
   last := v 
@@ -58,7 +58,7 @@ def PathBetween.ofVertex (G : SimpleGraph V) (A B : Set V) (v : V) (h : v ∈ A 
   last_mem := h.2 
   path := .nil 
 
-@[simp] 
+@[simp] -- 
 lemma PathBetween.ofVertex_inj {G : SimpleGraph V} (A B : Set V) (v w : V)
     (hv : v ∈ A ∩ B) (hw : w ∈ A ∩ B) :
     PathBetween.ofVertex G A B v hv = PathBetween.ofVertex G A B w hw ↔ v = w := by
@@ -68,7 +68,7 @@ lemma PathBetween.ofVertex_inj {G : SimpleGraph V} (A B : Set V) (v w : V)
     exact h
   · rintro rfl
     rfl
-
+ 
 def Connector.ofInter {G : SimpleGraph V} (A B : Set V) : G.Connector A B where
   paths := Set.range fun v : (A ∩ B : Set V) => PathBetween.ofVertex G A B v v.2
   disjoint := by
@@ -76,9 +76,7 @@ def Connector.ofInter {G : SimpleGraph V} (A B : Set V) : G.Connector A B where
     simp at hp hq
     obtain ⟨v, hv, rfl⟩ := hp
     obtain ⟨w, hw, rfl⟩ := hq 
-    simp  
-    sorry
-    --simp [Function.onFun, Set.disjoint_iff_forall_ne, Set.PairwiseDisjoint]  
+    simp [Function.onFun,Walk.interiorSupport_nil] 
 
 /-- Separators via `Path` is the same as separators via `Walk`. -/
 lemma IsSeparator_iff :
@@ -93,6 +91,25 @@ lemma IsSeparator_iff :
   · intro hs a ha b hb p
     exact hs a ha b hb p
 
+
+lemma Walk_in_empty_nil (a b : V) (p : (⊥ : SimpleGraph V).Walk a b) : p.length = 0  := by
+  cases p 
+  rfl
+  rename_i ha hp 
+  simp at ha 
+
+lemma IsSeparator_inter_empty : IsSeparator (⊥ : SimpleGraph V) A B (A ∩ B) := by
+  apply IsSeparator_iff.mpr 
+  intro a ha b hb p 
+  cases p 
+  · use a
+    simp [ha, hb] 
+  · rename_i ha hp 
+    simp at ha 
+
+lemma edgeSet_empty_iff (G : SimpleGraph V) : G.edgeSet = ∅ ↔ G = ⊥ := by
+  rw [← edgeSet_inj] 
+  simp 
 
 /-- Another characterization of the disjointness axiom of a connector. -/
 lemma Connector.disjoint' {G : SimpleGraph V} (C : G.Connector A B)
@@ -118,7 +135,8 @@ instance [Finite V] (G : SimpleGraph V) (A B : Set V) : Finite (G.PathBetween A 
 
 open scoped Cardinal
 
-lemma base_case [Finite V] (G : SimpleGraph V) (A B : Set V) (empty : (# G.edgeSet) = 0)  : 1 + 1 = 2:= 
+lemma base_case [Finite V] (G : SimpleGraph V) (A B : Set V) (empty : (# G.edgeSet) = 0) :  := 
+
 sorry
 
 theorem Menger: 
