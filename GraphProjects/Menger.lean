@@ -13,6 +13,7 @@ import GraphProjects.ForMathlib
 
 Following the proof in [...]
 -/
+open scoped Cardinal
 
 namespace SimpleGraph
 
@@ -39,7 +40,7 @@ theorem Walk.interiorSupport_cons_nil {G : SimpleGraph V} {u v : V} (huv : G.Adj
 
 theorem Walk.support_eq_cons_interiorSupport {G : SimpleGraph V} {u v : V} (p : G.Walk u v) (hn : ¬ p.length = 0):
     p.support = u :: (p.interiorSupport.concat v) := by
-  induction p with
+  induction p with 
   | nil => simp at hn
   | cons h p ih =>
     cases p with
@@ -107,6 +108,8 @@ lemma IsSeparator_inter_empty : IsSeparator (⊥ : SimpleGraph V) A B (A ∩ B) 
   · rename_i ha hp 
     simp at ha 
 
+
+
 lemma edgeSet_empty_iff (G : SimpleGraph V) : G.edgeSet = ∅ ↔ G = ⊥ := by
   rw [← edgeSet_inj] 
   simp 
@@ -133,11 +136,23 @@ instance [Finite V] (G : SimpleGraph V) (A B : Set V) : Finite (G.PathBetween A 
   infer_instance
 
 
-open scoped Cardinal
 
-lemma base_case [Finite V] (G : SimpleGraph V) (A B : Set V) (empty : (# G.edgeSet) = 0) :  := 
 
-sorry
+lemma card_Separator_ge_inter [Fintype V] (G : SimpleGraph V) (h : IsSeparator G A B S) : (#S) ≥ (#(A ∩ B : Set V))  := by
+  have : A ∩ B ⊆ S := by 
+    intro x hx
+    rw [IsSeparator_iff] at h 
+    sorry
+  sorry
+
+lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ ((∀ T : Set V, (#T) ≥ (#S)) ∨ (¬ IsSeparator G A B T)) → 
+      ∃ C : Connector G A B, (#C.paths) = (#S) := by 
+    rintro ⟨h,h2⟩  
+    rcases h2
+    · use Connector.ofInter A B 
+      
+    · 
+  sorry
 
 theorem Menger: 
     IsSeparator G A B S ∧ (∀ T : Set V, (#T) ≥ (#S)) ∨ (¬ IsSeparator G A B T) → 
