@@ -15,3 +15,5 @@ instance [Fintype V] [DecidableEq V] (G : SimpleGraph V)
   elems := (Finset.range (Fintype.card V)).biUnion fun n =>
     Set.toFinset {p : G.Path x y | p.1.length = n}
   complete := by simp [Walk.IsPath.length_lt]
+
+pp_extended_field_notation Walk.support

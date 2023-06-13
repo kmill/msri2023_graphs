@@ -25,10 +25,30 @@ structure PathBetween (G : SimpleGraph V) (A B : Set V) where
   (last_mem : last ∈ B)
   (path : G.Path first last)
 
+/-- The vertices of a walk that aren't the start or end. -/
+def Walk.interiorSupport {G : SimpleGraph V} : {u v : V} → (p : G.Walk u v) → List V
+  | _, _, .nil => []
+  | _, _, .cons _ .nil => []
+  | _, _, .cons' u v w _ p => v :: p.interiorSupport
+
+theorem Walk.interiorSupport_nil {G : SimpleGraph V} {u : V} :
+    (Walk.nil : G.Walk u u).interiorSupport = [] := rfl
+
+theorem Walk.interiorSupport_cons_nil {G : SimpleGraph V} {u v : V} (huv : G.Adj u v) :
+    (Walk.cons huv .nil).interiorSupport = [] := rfl
+
+theorem Walk.support_eq_cons_interiorSupport {G : SimpleGraph V} {u v : V} (p : G.Walk u v) (hn : ¬ p.length = 0):
+    p.support = u :: (p.interiorSupport.concat v) := by
+  induction p with
+  | nil => simp at hn
+  | cons h p ih =>
+    cases p with
+    | nil => simp [interiorSupport]
+    | cons h p => simpa [interiorSupport] using ih
+
 structure Connector (G : SimpleGraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
-  disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.support}
-
+  disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.interiorSupport}
 
 
 /-- Separators via `Path` is the same as separators via `Walk`. -/
@@ -48,7 +68,7 @@ lemma IsSeparator_iff :
 /-- Another characterization of the disjointness axiom of a connector. -/
 lemma Connector.disjoint' {G : SimpleGraph V} (C : G.Connector A B)
     (p q : G.PathBetween A B) (hp : p ∈ C.paths) (hq : q ∈ C.paths)
-    (v : V) (hvp : v ∈ p.path.1.support) (hvq : v ∈ q.path.1.support) :
+    (v : V) (hvp : v ∈ p.path.1.interiorSupport) (hvq : v ∈ q.path.1.interiorSupport) :
     p = q := by
   by_contra hpq
   have := C.disjoint hp hq hpq
