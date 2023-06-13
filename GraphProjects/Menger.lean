@@ -76,9 +76,8 @@ def Connector.ofInter {G : SimpleGraph V} (A B : Set V) : G.Connector A B where
     simp at hp hq
     obtain ⟨v, hv, rfl⟩ := hp
     obtain ⟨w, hw, rfl⟩ := hq 
-    simp  
-    sorry
-    --simp [Function.onFun, Set.disjoint_iff_forall_ne, Set.PairwiseDisjoint]  
+    simp [Function.onFun]
+    simp [Walk.interiorSupport_nil]
 
 /-- Separators via `Path` is the same as separators via `Walk`. -/
 lemma IsSeparator_iff :
