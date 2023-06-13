@@ -6,6 +6,8 @@ Authors: Swaroop Hegde, Sung-Yi Liao, Kyle Miller, Jake Weber, Jack Wesley
 
 import Mathlib.Combinatorics.SimpleGraph.Connectivity
 import Mathlib.SetTheory.Cardinal.Basic
+import Mathlib.Tactic.DeriveFintype
+import GraphProjects.ForMathlib
 
 /-! # Menger's theorem for simple graphs
 
@@ -42,10 +44,32 @@ lemma IsSeparator_iff :
   · intro hs a ha b hb p
     exact hs a ha b hb p
 
+
+/-- Another characterization of the disjointness axiom of a connector. -/
+lemma Connector.disjoint' {G : SimpleGraph V} (C : G.Connector A B)
+    (p q : G.PathBetween A B) (hp : p ∈ C.paths) (hq : q ∈ C.paths)
+    (v : V) (hvp : v ∈ p.path.1.support) (hvq : v ∈ q.path.1.support) :
+    p = q := by
+  by_contra hpq
+  have := C.disjoint hp hq hpq
+  rw [Function.onFun, Set.disjoint_iff_forall_ne] at this
+  exact this hvp hvq rfl
+
+/-- There are finitely many paths between `A` and `B` in a finite graph. -/
+instance foo [Fintype V] [DecidableEq V] (G : SimpleGraph V) [DecidableRel G.Adj]
+    (A B : Set V) [DecidablePred (· ∈ A)] [DecidablePred (· ∈ B)] :
+    Fintype (G.PathBetween A B) :=
+  derive_fintype% (G.PathBetween A B)
+
+instance [Finite V] (G : SimpleGraph V) (A B : Set V) : Finite (G.PathBetween A B) := by
+  classical
+  have := Fintype.ofFinite V
+  infer_instance
+
+
 open scoped Cardinal
 
 theorem Menger: 
     IsSeparator G A B S ∧ (∀ T : Set V, (#T) ≥ (#S)) ∨ (¬ IsSeparator G A B T) → 
       ∃ C : Connector G A B, (#C.paths) = (#S) := by 
   sorry
-
