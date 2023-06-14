@@ -140,21 +140,28 @@ instance [Finite V] (G : SimpleGraph V) (A B : Set V) : Finite (G.PathBetween A 
 
 lemma card_Separator_ge_inter [Fintype V] (G : SimpleGraph V) (h : IsSeparator G A B S) : (#S) ≥ (#(A ∩ B : Set V))  := by
   have : A ∩ B ⊆ S := by 
-    intro x hx
+    intro x hx 
     rw [IsSeparator_iff] at h 
-    sorry
-  sorry
+    specialize h x hx.1 x hx.2 
+    obtain ⟨s,hs⟩ := h Walk.nil 
+    have : x = s := by 
+      cases hs.2 
+      · trivial
+      · tauto 
+    rw [← this] at hs   
+    exact hs.1 
+  exact Cardinal.mk_le_mk_of_subset this
 
-lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ ((∀ T : Set V, (#T) ≥ (#S)) ∨ (¬ IsSeparator G A B T)) → 
+--TBD
+lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
       ∃ C : Connector G A B, (#C.paths) = (#S) := by 
-    rintro ⟨h,h2⟩  
-    rcases h2
+    rintro ⟨h,h2⟩ 
     · use Connector.ofInter A B 
-      
-    · 
-  sorry
+      rw [Connector.ofInter] 
+      dsimp [Function.onFun] 
+      sorry
 
-theorem Menger: 
-    IsSeparator G A B S ∧ (∀ T : Set V, (#T) ≥ (#S)) ∨ (¬ IsSeparator G A B T) → 
+theorem Menger : 
+    IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
       ∃ C : Connector G A B, (#C.paths) = (#S) := by 
   sorry
