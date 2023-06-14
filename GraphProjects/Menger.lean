@@ -6,7 +6,7 @@ Authors: Swaroop Hegde, Sung-Yi Liao, Kyle Miller, Jake Weber, Jack Wesley
 
 import Mathlib.Combinatorics.SimpleGraph.Connectivity
 import Mathlib.SetTheory.Cardinal.Basic
-import Mathlib.Tactic.DeriveFintype
+import Mathlib.Tactic.DeriveFintype 
 import GraphProjects.ForMathlib
 
 /-! # Menger's theorem for simple graphs
@@ -79,6 +79,12 @@ def Connector.ofInter {G : SimpleGraph V} (A B : Set V) : G.Connector A B where
     obtain ⟨w, hw, rfl⟩ := hq 
     simp [Function.onFun,Walk.interiorSupport_nil] 
 
+lemma Connector_card_eq_card_inter (G : SimpleGraph V) (A B : Set V) : (#(Connector.ofInter A B : Connector G A B).paths) = (#(A ∩ B : Set V)) := by
+  apply Cardinal.mk_range_eq 
+  intro u v 
+  simp  
+  exact fun a => SetCoe.ext a 
+
 /-- Separators via `Path` is the same as separators via `Walk`. -/
 lemma IsSeparator_iff :
     IsSeparator G A B S ↔
@@ -99,6 +105,7 @@ lemma Walk_in_empty_nil (a b : V) (p : (⊥ : SimpleGraph V).Walk a b) : p.lengt
   rename_i ha hp 
   simp at ha 
 
+/-In an empty graph, A ∩ B is an AB-separator.-/
 lemma IsSeparator_inter_empty : IsSeparator (⊥ : SimpleGraph V) A B (A ∩ B) := by
   apply IsSeparator_iff.mpr 
   intro a ha b hb p 
@@ -135,10 +142,8 @@ instance [Finite V] (G : SimpleGraph V) (A B : Set V) : Finite (G.PathBetween A 
   have := Fintype.ofFinite V
   infer_instance
 
-
-
-
-lemma card_Separator_ge_inter [Fintype V] (G : SimpleGraph V) (h : IsSeparator G A B S) : (#S) ≥ (#(A ∩ B : Set V))  := by
+/-(Should be cleaned up) The number of elements of any separator of A and B is bounded below by |A ∩ B|-/
+lemma card_Separator_ge_inter  (G : SimpleGraph V) (h : IsSeparator G A B S) : (#S) ≥ (#(A ∩ B : Set V))  := by
   have : A ∩ B ⊆ S := by 
     intro x hx 
     rw [IsSeparator_iff] at h 
@@ -152,14 +157,16 @@ lemma card_Separator_ge_inter [Fintype V] (G : SimpleGraph V) (h : IsSeparator G
     exact hs.1 
   exact Cardinal.mk_le_mk_of_subset this
 
---TBD
-lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
-      ∃ C : Connector G A B, (#C.paths) = (#S) := by 
-    rintro ⟨h,h2⟩ 
-    · use Connector.ofInter A B 
-      rw [Connector.ofInter] 
-      dsimp [Function.onFun] 
-      sorry
+/-Base case for the induction proof: If G has no edges, then there is a connector 
+whose number of paths (components) equals the number of elements in a minimal separator-/
+lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → ∃ C : Connector G A B, (#C.paths) = (#S) := by 
+  intro ⟨hS,hMin⟩  
+  use Connector.ofInter A B 
+  rw [Connector_card_eq_card_inter]
+  rw [edgeSet_empty_iff] at empty
+  have := hMin (A ∩ B)
+  rw [empty] at this 
+  exact le_antisymm (card_Separator_ge_inter G hS) (this IsSeparator_inter_empty) 
 
 theorem Menger : 
     IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
