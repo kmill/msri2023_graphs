@@ -172,3 +172,44 @@ theorem Menger :
     IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
       ∃ C : Connector G A B, (#C.paths) = (#S) := by 
   sorry
+
+lemma isSeparator_union_singleton (G : SimpleGraph V) (A B S : Set V) (u v : V) (huv: G.Adj u v)
+ (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S) : 
+IsSeparator G A B (S ∪ {u}) := by
+  classical
+  rw [IsSeparator_iff] 
+  intro a ha b hb p 
+  rw [IsSeparator_iff] at hS
+  specialize hS a ha b hb 
+  have h : ⟦(u,v)⟧ ∈ p.edges ∨ ¬ ⟦(u,v)⟧ ∈ p.edges := by
+    exact em (Quotient.mk (Sym2.Rel.setoid V) (u, v) ∈ Walk.edges p)
+  cases' h with h1 h2 
+  · use u 
+    constructor
+    · simp
+    · apply p.fst_mem_support_of_mem_edges
+      exact h1 
+  · specialize hS (Walk.toDeleteEdge ⟦(u,v)⟧ p h2) 
+    obtain ⟨s,h⟩ := hS
+    use s
+    constructor
+    · left 
+      exact h.1 
+    · simp at h 
+      exact h.2
+
+  example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
+  (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S)
+   (hP : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A P T) : IsSeparator G A B T := by
+    rw [IsSeparator_iff] at * 
+    intro a ha b hb p 
+    specialize hS a ha b hb 
+    --specialize hP a ha 
+    by_cases ⟦(u,v)⟧ ∈ p.edges 
+    · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
+      specialize hP a ha u (by simp [hPS]) 
+      --have : u ∈ P := by simp [hPS] 
+      --obtain ⟨q,r,hqr⟩ := mem_support_iff_exists_append this 
+      sorry 
+    · sorry
+    sorry
