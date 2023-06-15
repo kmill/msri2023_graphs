@@ -175,7 +175,7 @@ IsSeparator G A B (S ∪ {u}) := by
   rw [IsSeparator_iff] 
   intro a ha b hb p 
   rw [IsSeparator_iff] at hS
-  specialize hS a ha b hb 
+  specialize hS a ha b hb
   have h : ⟦(u,v)⟧ ∈ p.edges ∨ ¬ ⟦(u,v)⟧ ∈ p.edges := by
     exact em (Quotient.mk (Sym2.Rel.setoid V) (u, v) ∈ Walk.edges p)
   cases' h with h1 h2 
@@ -213,3 +213,9 @@ IsSeparator G A B (S ∪ {u}) := by
 theorem Menger : 
   IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
     ∃ C : Connector G A B, (#C.paths) = (#S) := by sorry
+-- example (G : SimpleGraph V) (A B : Set V) (u v : V) (huv: G.Adj u v) (p : G.Walk a b) : 
+--   ∃ (q: G.Walk a u), (r: G.Walk u v), (s: G.Walk v b) := by
+-- sorry
+
+
+  
