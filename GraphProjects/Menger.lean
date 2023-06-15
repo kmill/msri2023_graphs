@@ -168,7 +168,7 @@ lemma card_Separator_ge_inter  (G : SimpleGraph V) (h : IsSeparator G A B S) : (
 /-Base case for the induction proof: If G has no edges, then there is a connector 
 whose number of paths (components) equals the number of elements in a minimal separator-/
 lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → ∃ C : Connector G A B, (#C.paths) = (#S) := by 
-  intro ⟨hS,hMin⟩  
+  intro ⟨hS,hMin⟩ 
   use Connector.ofInter A B 
   rw [Connector_card_eq_card_inter]
   rw [edgeSet_empty_iff] at empty
@@ -183,7 +183,7 @@ IsSeparator G A B (S ∪ {u}) := by
   rw [IsSeparator_iff] 
   intro a ha b hb p 
   rw [IsSeparator_iff] at hS
-  specialize hS a ha b hb 
+  specialize hS a ha b hb
   have h : ⟦(u,v)⟧ ∈ p.edges ∨ ¬ ⟦(u,v)⟧ ∈ p.edges := by
     exact em (Quotient.mk (Sym2.Rel.setoid V) (u, v) ∈ Walk.edges p)
   cases' h with h1 h2 
@@ -201,35 +201,33 @@ IsSeparator G A B (S ∪ {u}) := by
     · simp at h 
       exact h.2
 
-  example [DecidableEq V] (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
+
+/- AP separator of G-e is also an AB separator of G -/
+  example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
   (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S)
    (hP : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A P T) : IsSeparator G A B T := by
+    classical
     rw [IsSeparator_iff] at * 
-    intro a ha b hb p 
-    specialize hS a ha b hb 
-    --specialize hP a ha 
-    by_cases ⟦(u,v)⟧ ∈ p.edges 
+    intro a ha b hb p
+    specialize hS a ha b hb
+    by_cases ⟦(u,v)⟧ ∈ p.edges
     · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
-      specialize hP a ha u (by simp [hPS]) 
-      --have : u ∈ P := by simp [hPS] 
-      --obtain ⟨q,r,hqr⟩ := mem_support_iff_exists_append this 
-      --have q := Walk.takeUntil p u this 
-      have := hP (Walk.toDeleteEdge ⟦(u,v)⟧ (Walk.takeUntil p u this) (by sorry)) --need to fix/may be wrong
-      simp at this 
-      obtain ⟨s,hs,hqs⟩ := this 
-      use s
-      constructor 
-      · exact hs
-      · have := Walk.support_takeUntil_subset p this 
-        apply this 
-        exact hqs 
-    · have := hS (Walk.toDeleteEdge ⟦(u,v)⟧ p h) 
-      obtain ⟨s,hs⟩ := this 
-      specialize hP a ha s (by simp [hs.1,hPS]) (Walk.takeUntil (Walk.toDeleteEdge ⟦(u,v)⟧ p h) s _) 
-      simp 
-      --obtain ⟨t,ht,ht'⟩ := hP a ha s (by simp [hs.1,hPS]) (Walk.takeUntil (Walk.toDeleteEdge ⟦(u,v)⟧ p h) s _) 
-      
-      sorry
+      have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
+      rcases br with ⟨q, r⟩ 
+      have huP : u ∈ P := by simp [hPS]
+      specialize hP a ha u huP
+
+
+    · sorry
+
+theorem Menger : 
+  IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
+    ∃ C : Connector G A B, (#C.paths) = (#S) := by sorry
+-- example (G : SimpleGraph V) (A B : Set V) (u v : V) (huv: G.Adj u v) (p : G.Walk a b) : 
+--   ∃ (q: G.Walk a u), (r: G.Walk u v), (s: G.Walk v b) := by
+-- sorry
+
+
 
 /-- If G' is obtained from G by removing an edge, then an AB-separator of G is an AB-separator of G'-/
 lemma isSeparator_deleted (G : SimpleGraph V) (A B : Set V) (u v : V) (hG : IsSeparator G A B S) : 
@@ -264,7 +262,3 @@ lemma minSeparator_delete_card_atMost (u v : V) (G : SimpleGraph V) (A B S T: Se
     sorry
   rw [← this]
   apply minS.2 (T ∪ {u}) 
-  
-theorem Menger : 
-  IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → ∃ C : Connector G A B, (#C.paths) = (#S) := by 
-  sorry
