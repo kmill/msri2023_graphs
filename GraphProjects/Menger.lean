@@ -211,13 +211,18 @@ IsSeparator G A B (S ∪ {u}) := by
     intro a ha b hb p
     specialize hS a ha b hb
     by_cases ⟦(u,v)⟧ ∈ p.edges
-    · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
+    · 
+      -- have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
       have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
       rcases br with ⟨q, r⟩ 
       have huP : u ∈ P := by simp [hPS]
       specialize hP a ha u huP
+      have edge_not_in: ¬⟦(u,v)⟧ ∈ SimpleGraph.Walk.edges q := sorry
+      have walk_au_G' := q.toDeleteEdge ⟦(u,v)⟧ edge_not_in 
+      specialize hP walk_au_G'
 
-
+      -- lift point s from au Walk in G' to au Walk in G to ab Walk in G
+      
     · sorry
 
 theorem Menger : 
@@ -228,4 +233,16 @@ theorem Menger :
 -- sorry
 
 
-  
+lemma setCardAddOneMem (T : Set V) (u : V) (h: ¬ u ∈ T) : (#(T ∪ {u} : Set V)) = (#T) + 1 := by
+  have disjoint: Disjoint T {u} := by
+    simpa
+    -- rw [Set.disjoint_iff]
+    -- rintro x ⟨hx, rfl⟩ 
+    -- contradiction
+
+  rw [ Cardinal.mk_union_of_disjoint disjoint]
+  simp only [Cardinal.mk_fintype, Fintype.card_ofSubsingleton, Nat.cast_one]
+
+lemma setCardAddOneMem' (T : Set V) (u : V) (h: u ∈ T) : (#(T ∪ {u} : Set V)) = (#T) := by
+  simp only [Set.union_singleton, Set.insert_eq_of_mem h]
+
