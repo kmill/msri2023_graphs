@@ -176,7 +176,7 @@ lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ (∀ T : Set
   rw [empty] at this 
   exact le_antisymm (card_Separator_ge_inter G hS) (this IsSeparator_inter_empty) 
 
-lemma isSeparator_union_singleton (G : SimpleGraph V) (A B S : Set V) (u v : V)
+lemma isSeparator_union_singleton (G : SimpleGraph V) (A B S : Set V) (u v : V) 
  (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S) : 
 IsSeparator G A B (S ∪ {u}) := by
   classical
@@ -246,3 +246,37 @@ lemma setCardAddOneMem (T : Set V) (u : V) (h: ¬ u ∈ T) : (#(T ∪ {u} : Set 
 lemma setCardAddOneMem' (T : Set V) (u : V) (h: u ∈ T) : (#(T ∪ {u} : Set V)) = (#T) := by
   simp only [Set.union_singleton, Set.insert_eq_of_mem h]
 
+
+/-- If G' is obtained from G by removing an edge, then an AB-separator of G is an AB-separator of G'-/
+lemma isSeparator_deleted (G : SimpleGraph V) (A B : Set V) (u v : V) (hG : IsSeparator G A B S) : 
+IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S := by
+  rw [IsSeparator_iff] at * 
+  intro a ha b hb p 
+  have : (∀ (e : Sym2 V), e ∈ Walk.edges p → e ∈ edgeSet G) := by 
+    simp [edgeSet_deleteEdges] 
+    intro e he 
+    have := Walk.edges_subset_edgeSet p he
+    rw [edgeSet_deleteEdges] at this 
+    exact this.1 
+  specialize hG a ha b hb (p.transfer G this) 
+  simp [Walk.support_transfer] at hG 
+  exact hG
+
+/-- Deleting an edge does not increase the minimum size of a separator. (Can generalize this lemma for larger sets)-/
+lemma minSeparator_delete_card_le (G : SimpleGraph V) (A B S T: Set V) (u v : V) (hS : IsSeparator G A B S)
+(hT : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T)
+(minT : IsMinSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T) : (#T) ≤ (#S) := by
+  apply minT.2 
+  apply isSeparator_deleted 
+  exact hS 
+
+/-- Deleting an edge decrases the minimum size of a separator by at most one.-/
+lemma minSeparator_delete_card_atMost (u v : V) (G : SimpleGraph V) (A B S T: Set V) (u v : V) (hS : IsSeparator G A B S)
+(hT : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T)
+(minT : IsMinSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T) (minS : IsMinSeparator G A B S) :
+(#S) ≤ (#T) + 1 := by
+  have h : IsSeparator G A B (T ∪ {u}) := isSeparator_union_singleton G A B T u v hT 
+  have : (#(T ∪ {u} : Set V)) = (#T) + 1 := by
+    sorry
+  rw [← this]
+  apply minS.2 (T ∪ {u}) 
