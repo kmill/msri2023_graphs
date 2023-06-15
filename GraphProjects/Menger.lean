@@ -20,6 +20,10 @@ namespace SimpleGraph
 def IsSeparator (G : SimpleGraph V) (A B : Set V) (S : Set V) : Prop :=
   ∀ a ∈ A, ∀ b ∈ B, ∀ p : G.Path a b, ∃ s ∈ S, s ∈ p.1.support
 
+/-- Definition of a minimal separator of A, B -/
+def IsMinSeparator (G : SimpleGraph V) (A B : Set V) (S : Set V)  : Prop := 
+  (IsSeparator G A B S) ∧ (∀ T : Set _, IsSeparator G A B T → (# T) ≥ (#S))
+
 structure PathBetween (G : SimpleGraph V) (A B : Set V) where
   (first last : V)
   (first_mem : first ∈ A)
@@ -50,6 +54,10 @@ theorem Walk.support_eq_cons_interiorSupport {G : SimpleGraph V} {u v : V} (p : 
 structure Connector (G : SimpleGraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
   disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.interiorSupport}
+
+/-- Definition of a maximal AB-connector -/
+def IsMaxConnector (G : SimpleGraph V) (A B : Set V) (C : Connector G A B) : Prop := 
+  ∀ D : Connector G A B, (#C.paths) ≥ (#D.paths)
 
 @[simps] --PathBetween for vertex in A ∩ B 
 def PathBetween.ofVertex (G : SimpleGraph V) (A B : Set V) (v : V) (h : v ∈ A ∩ B) : G.PathBetween A B where
@@ -168,12 +176,7 @@ lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ (∀ T : Set
   rw [empty] at this 
   exact le_antisymm (card_Separator_ge_inter G hS) (this IsSeparator_inter_empty) 
 
-theorem Menger : 
-    IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
-      ∃ C : Connector G A B, (#C.paths) = (#S) := by 
-  sorry
-
-lemma isSeparator_union_singleton (G : SimpleGraph V) (A B S : Set V) (u v : V) (huv: G.Adj u v)
+lemma isSeparator_union_singleton (G : SimpleGraph V) (A B S : Set V) (u v : V) 
  (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S) : 
 IsSeparator G A B (S ∪ {u}) := by
   classical
@@ -198,7 +201,7 @@ IsSeparator G A B (S ∪ {u}) := by
     · simp at h 
       exact h.2
 
-  example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
+  example [DecidableEq V] (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
   (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S)
    (hP : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A P T) : IsSeparator G A B T := by
     rw [IsSeparator_iff] at * 
@@ -210,6 +213,58 @@ IsSeparator G A B (S ∪ {u}) := by
       specialize hP a ha u (by simp [hPS]) 
       --have : u ∈ P := by simp [hPS] 
       --obtain ⟨q,r,hqr⟩ := mem_support_iff_exists_append this 
-      sorry 
-    · sorry
+      --have q := Walk.takeUntil p u this 
+      have := hP (Walk.toDeleteEdge ⟦(u,v)⟧ (Walk.takeUntil p u this) (by sorry)) --need to fix/may be wrong
+      simp at this 
+      obtain ⟨s,hs,hqs⟩ := this 
+      use s
+      constructor 
+      · exact hs
+      · have := Walk.support_takeUntil_subset p this 
+        apply this 
+        exact hqs 
+    · have := hS (Walk.toDeleteEdge ⟦(u,v)⟧ p h) 
+      obtain ⟨s,hs⟩ := this 
+      specialize hP a ha s (by simp [hs.1,hPS]) (Walk.takeUntil (Walk.toDeleteEdge ⟦(u,v)⟧ p h) s _) 
+      simp 
+      --obtain ⟨t,ht,ht'⟩ := hP a ha s (by simp [hs.1,hPS]) (Walk.takeUntil (Walk.toDeleteEdge ⟦(u,v)⟧ p h) s _) 
+      
+      sorry
+
+/-- If G' is obtained from G by removing an edge, then an AB-separator of G is an AB-separator of G'-/
+lemma isSeparator_deleted (G : SimpleGraph V) (A B : Set V) (u v : V) (hG : IsSeparator G A B S) : 
+IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S := by
+  rw [IsSeparator_iff] at * 
+  intro a ha b hb p 
+  have : (∀ (e : Sym2 V), e ∈ Walk.edges p → e ∈ edgeSet G) := by 
+    simp [edgeSet_deleteEdges] 
+    intro e he 
+    have := Walk.edges_subset_edgeSet p he
+    rw [edgeSet_deleteEdges] at this 
+    exact this.1 
+  specialize hG a ha b hb (p.transfer G this) 
+  simp [Walk.support_transfer] at hG 
+  exact hG
+
+/-- Deleting an edge does not increase the minimum size of a separator. (Can generalize this lemma for larger sets)-/
+lemma minSeparator_delete_card_le (G : SimpleGraph V) (A B S T: Set V) (u v : V) (hS : IsSeparator G A B S)
+(hT : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T)
+(minT : IsMinSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T) : (#T) ≤ (#S) := by
+  apply minT.2 
+  apply isSeparator_deleted 
+  exact hS 
+
+/-- Deleting an edge decrases the minimum size of a separator by at most one.-/
+lemma minSeparator_delete_card_atMost (u v : V) (G : SimpleGraph V) (A B S T: Set V) (u v : V) (hS : IsSeparator G A B S)
+(hT : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T)
+(minT : IsMinSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T) (minS : IsMinSeparator G A B S) :
+(#S) ≤ (#T) + 1 := by
+  have h : IsSeparator G A B (T ∪ {u}) := isSeparator_union_singleton G A B T u v hT 
+  have : (#(T ∪ {u} : Set V)) = (#T) + 1 := by
     sorry
+  rw [← this]
+  apply minS.2 (T ∪ {u}) 
+  
+theorem Menger : 
+  IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → ∃ C : Connector G A B, (#C.paths) = (#S) := by 
+  sorry
