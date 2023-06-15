@@ -160,7 +160,7 @@ lemma card_Separator_ge_inter  (G : SimpleGraph V) (h : IsSeparator G A B S) : (
 /-Base case for the induction proof: If G has no edges, then there is a connector 
 whose number of paths (components) equals the number of elements in a minimal separator-/
 lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → ∃ C : Connector G A B, (#C.paths) = (#S) := by 
-  intro ⟨hS,hMin⟩  
+  intro ⟨hS,hMin⟩ 
   use Connector.ofInter A B 
   rw [Connector_card_eq_card_inter]
   rw [edgeSet_empty_iff] at empty
@@ -168,12 +168,7 @@ lemma base_case (empty : G.edgeSet = ∅) : IsSeparator G A B S ∧ (∀ T : Set
   rw [empty] at this 
   exact le_antisymm (card_Separator_ge_inter G hS) (this IsSeparator_inter_empty) 
 
-theorem Menger : 
-    IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
-      ∃ C : Connector G A B, (#C.paths) = (#S) := by 
-  sorry
-
-lemma isSeparator_union_singleton (G : SimpleGraph V) (A B S : Set V) (u v : V) (huv: G.Adj u v)
+lemma isSeparator_union_singleton (G : SimpleGraph V) (A B S : Set V) (u v : V)
  (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S) : 
 IsSeparator G A B (S ∪ {u}) := by
   classical
@@ -198,18 +193,23 @@ IsSeparator G A B (S ∪ {u}) := by
     · simp at h 
       exact h.2
 
+
+/- AP separator of G-e is also an AB separator of G -/
   example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
   (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S)
    (hP : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A P T) : IsSeparator G A B T := by
+    classical
     rw [IsSeparator_iff] at * 
-    intro a ha b hb p 
-    specialize hS a ha b hb 
-    --specialize hP a ha 
-    by_cases ⟦(u,v)⟧ ∈ p.edges 
+    intro a ha b hb p
+    specialize hS a ha b hb
+    by_cases ⟦(u,v)⟧ ∈ p.edges
     · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
-      specialize hP a ha u (by simp [hPS]) 
-      --have : u ∈ P := by simp [hPS] 
-      --obtain ⟨q,r,hqr⟩ := mem_support_iff_exists_append this 
-      sorry 
+      have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
+      rcases br with ⟨ q, r⟩ 
+      have huP : u ∈ P := by simp [hPS]
+      specialize hP a ha u huP
     · sorry
-    sorry
+
+theorem Menger : 
+  IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
+    ∃ C : Connector G A B, (#C.paths) = (#S) := by sorry
