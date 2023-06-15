@@ -20,6 +20,10 @@ namespace SimpleGraph
 def IsSeparator (G : SimpleGraph V) (A B : Set V) (S : Set V) : Prop :=
   ∀ a ∈ A, ∀ b ∈ B, ∀ p : G.Path a b, ∃ s ∈ S, s ∈ p.1.support
 
+/-- Definition of a minimal separator of A, B -/
+def IsMinSeparator (G : SimpleGraph V) (A B : Set V) (S : Set V)  : Prop := 
+  (IsSeparator G A B S) ∧ (∀ T : Set _, IsSeparator G A B T → (# T) ≥ (#S))
+
 structure PathBetween (G : SimpleGraph V) (A B : Set V) where
   (first last : V)
   (first_mem : first ∈ A)
@@ -50,6 +54,10 @@ theorem Walk.support_eq_cons_interiorSupport {G : SimpleGraph V} {u v : V} (p : 
 structure Connector (G : SimpleGraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
   disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.interiorSupport}
+
+/-- Definition of a maximal AB-connector -/
+def IsMaxConnector (G : SimpleGraph V) (A B : Set V) (C : Connector G A B) : Prop := 
+  ∀ D : Connector G A B, (#C.paths) ≥ (#D.paths)
 
 @[simps] --PathBetween for vertex in A ∩ B 
 def PathBetween.ofVertex (G : SimpleGraph V) (A B : Set V) (v : V) (h : v ∈ A ∩ B) : G.PathBetween A B where
@@ -205,9 +213,11 @@ IsSeparator G A B (S ∪ {u}) := by
     by_cases ⟦(u,v)⟧ ∈ p.edges
     · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
       have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
-      rcases br with ⟨ q, r⟩ 
+      rcases br with ⟨q, r⟩ 
       have huP : u ∈ P := by simp [hPS]
       specialize hP a ha u huP
+
+
     · sorry
 
 theorem Menger : 
