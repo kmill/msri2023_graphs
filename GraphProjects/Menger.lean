@@ -180,7 +180,7 @@ IsSeparator G A B (S ∪ {u}) := by
   rw [IsSeparator_iff] 
   intro a ha b hb p 
   rw [IsSeparator_iff] at hS
-  specialize hS a ha b hb 
+  specialize hS a ha b hb
   have h : ⟦(u,v)⟧ ∈ p.edges ∨ ¬ ⟦(u,v)⟧ ∈ p.edges := by
     exact em (Quotient.mk (Sym2.Rel.setoid V) (u, v) ∈ Walk.edges p)
   cases' h with h1 h2 
@@ -198,18 +198,58 @@ IsSeparator G A B (S ∪ {u}) := by
     · simp at h 
       exact h.2
 
+-- example (G : SimpleGraph V) (A B : Set V) (u v : V) (huv: G.Adj u v) (p : G.Walk a b) : 
+--   ∃ (q: G.Walk a u), (r: G.Walk u v), (s: G.Walk v b) := by
+-- sorry
+
+
   example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
   (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S)
    (hP : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A P T) : IsSeparator G A B T := by
-    rw [IsSeparator_iff] at * 
+    rw [IsSeparator_iff]
     intro a ha b hb p 
-    specialize hS a ha b hb 
-    --specialize hP a ha 
-    by_cases ⟦(u,v)⟧ ∈ p.edges 
-    · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
-      specialize hP a ha u (by simp [hPS]) 
+    by_cases ⟦(u,v)⟧ ∈ p.edges
+    · rw [IsSeparator] at hP
+      have huP : u ∈ P := by simp [hPS]
+      specialize hP a ha u huP
+      
+
+      
+
+      -- · SimpleGraph.Walk.mem_support_iff_exists_append
+      -- mem_support_iff_exists_append
+      sorry
+      · sorry
+
+    -- · rw [IsSeparator] at hP
+    --   have huP : u ∈ P := by sorry
+    --   c
+    --   specialize hS a ha b hb
+      
+
+      
+    sorry
+    · sorry 
+    -- specialize hS a ha b hb
+    -- have huP : u ∈ P := by sorry
+    -- specialize hP a ha u huP
+    
+
+
+
+    -- by_cases ⟦(u,v)⟧ ∈ p.edges 
+    -- · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
+    --   specialize hP a ha u (by simp [hPS]) 
+    --   rw [SimpleGraph.Walk.mem_support_iff_exists_append] at this
+    --   obtain ⟨q, r, rfl⟩ := this 
+      
+
       --have : u ∈ P := by simp [hPS] 
       --obtain ⟨q,r,hqr⟩ := mem_support_iff_exists_append this 
-      sorry 
+    --  sorry 
     · sorry
     sorry
+
+
+
+-- example (G : SimpleGraph V)
