@@ -207,6 +207,7 @@ IsSeparator G A B (S ∪ {u}) := by
   (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S)
    (hP : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A P T) : IsSeparator G A B T := by
     classical
+    have G' := G.deleteEdges {⟦(u,v)⟧}
     rw [IsSeparator_iff] at * 
     intro a ha b hb p
     specialize hS a ha b hb
@@ -216,7 +217,12 @@ IsSeparator G A B (S ∪ {u}) := by
       rcases br with ⟨q, r⟩ 
       have huP : u ∈ P := by simp [hPS]
       specialize hP a ha u huP
-
+      have uv_notin_q: ⟦(u,v)⟧ ∉ q.edges := sorry
+      have au_inG' := q.toDeleteEdge ⟦(u,v)⟧ uv_notin_q
+      specialize hP au_inG' 
+      rcases hP with ⟨ s, ⟨sint, sin_au'_supp⟩ ⟩
+      have : s ∈ p.support := by 
+      
 
     · sorry
 
