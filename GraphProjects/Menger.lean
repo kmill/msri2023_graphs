@@ -256,8 +256,61 @@ example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : 
     simp only [Walk.support_transfer] at s_in_au'_supp 
     assumption
     --                          
-  · sorry
+  · let p_inG' := p.toDeleteEdge ⟦(u,v)⟧ h
+    specialize hS p_inG'
+    rcases hS with ⟨ s, ⟨sinS, s_in_S_ab_G'_supp⟩⟩
+    let ⟨q, r, hp⟩ := Iff.mp p_inG'.mem_support_iff_exists_append s_in_S_ab_G'_supp
+    have s_inP : s ∈ P := by simp [sinS, hPS]
+    specialize hP a ha s s_inP q
+    rcases hP with ⟨  s1, ⟨s1_in_T, s1_in_q_support⟩ ⟩ 
+    use s1, s1_in_T
+    have : s1 ∈ q.support ∨ s1 ∈ r.support := Or.inl s1_in_q_support
+    have s1_in_append_p_in_G': s1 ∈ (Walk.append q r).support :=  (Walk.mem_support_append_iff q r).2 this
+    rw [Eq.symm hp] at s1_in_append_p_in_G'
+    simp only [Walk.support_transfer] at s1_in_append_p_in_G'
+    exact s1_in_append_p_in_G'
+    
+    
 
+    -- use s, sinS
+    -- simp only [Walk.support_transfer] at s_in_ab'_supp 
+    -- assumption
+    sorry
+
+  -- classical
+  -- have G' := G.deleteEdges {⟦(u,v)⟧}
+  -- rw [IsSeparator_iff] at * 
+  -- intro a ha b hb p
+  -- specialize hS a ha b hb
+  -- by_cases ⟦(u,v)⟧ ∈ p.edges
+  -- · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
+  -- --have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
+  -- --rcases br with ⟨q, r⟩ 
+  --   have q := p.takeUntil u this
+  --   have huP : u ∈ P := by simp [hPS]
+  --   specialize hP a ha u huP
+  --   have uv_notin_q: ⟦(u,v)⟧ ∉ q.edges := sorry
+  --   have q_inG' := q.toDeleteEdge ⟦(u,v)⟧ uv_notin_q
+  --   specialize hP q_inG' 
+  --   rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
+  --   have : q = q_inG'.transfer G _
+  --   have sInq : s ∈ q.support := by
+  --     obtain := Iff.mp (Walk.mem_verts_toSubgraph q) -- trying to use subgraph to get s in support of q...
+  --     sorry
+  --   have uInWalkab : u ∈ p.support := sorry
+  --   have r := p.dropUntil u uInWalkab
+  --   have subset_walk := Walk.subset_support_append_left q r 
+    
+  --   sorry
+  -- · sorry
+------------------------------------------------
+-- example (G : SimpleGraph V) (A B P : Set V) (u s : V) (p' : G.Walk a u) (p : G.Walk a b) (h2 : s ∈ p'.support) 
+-- : s ∈ p.support := by
+--   -- have reverse_p: G.Walk b a := Walk.reverse p
+--   obtain := Walk.dropUntil 
+-- -- obtain := Walk.subset_support_append_left p' 
+--   sorry
+------------------------------------------------
 theorem Menger : 
   IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
     ∃ C : Connector G A B, (#C.paths) = (#S) := by sorry
@@ -303,13 +356,16 @@ lemma minSeparator_delete_card_le (G : SimpleGraph V) (A B S T: Set V) (u v : V)
   apply isSeparator_deleted 
   exact hS 
 
-/-- Deleting an edge decrases the minimum size of a separator by at most one.-/
+/-- Deleting an edge decreases the minimum size of a separator by at most one.-/
 lemma minSeparator_delete_card_atMost (u v : V) (G : SimpleGraph V) (A B S T: Set V) (u v : V) (hS : IsSeparator G A B S)
 (hT : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T)
-(minT : IsMinSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T) (minS : IsMinSeparator G A B S) :
-(#S) ≤ (#T) + 1 := by
+-- (minT : IsMinSeparator (G.deleteEdges {⟦(u,v)⟧}) A B T) 
+(minS : IsMinSeparator G A B S) 
+(hu: ¬ u ∈ T):
+(#S) ≤ (#T) + 1 := by 
   have h : IsSeparator G A B (T ∪ {u}) := isSeparator_union_singleton G A B T u v hT 
   have : (#(T ∪ {u} : Set V)) = (#T) + 1 := by
-    sorry
+    apply setCardAddOneMem T u hu
   rw [← this]
   apply minS.2 (T ∪ {u}) 
+  exact h
