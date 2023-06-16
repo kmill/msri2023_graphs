@@ -49,7 +49,7 @@ def PathBetween.append_fromSeparator {G : SimpleGraph V} {A B : Set V}
   path := ⟨Walk.append (p.path.1.copy rfl h) q.path.1 , by
     rw [Walk.isPath_def] 
     simp 
-    rw [Walk.mem_support_append_iff.2]
+    --rw [Walk.mem_support_append_iff.2]
     sorry⟩ 
 
 /-- The vertices of a walk that aren't the start or end. -/
@@ -272,16 +272,17 @@ example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : 
       have : u ∉ q'.support := by 
         intro uinq'
         have uinr: u ∈ r'.support := r'.end_mem_support
-    · 
-    let q_inG' := q.toDeleteEdge ⟦(u,v)⟧ uv_notin_q
-    specialize hP q_inG'
-    rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
-    use s, sint
-    rw [hp]
-    simp only [Walk.mem_support_append_iff]
-    left
-    simp only [Walk.support_transfer] at s_in_au'_supp 
-    assumption
+        sorry
+      sorry
+    · let q_inG' := q.toDeleteEdge ⟦(u,v)⟧ (sorry)
+      specialize hP q_inG'
+      rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
+      use s, sint
+      rw [hp]
+      simp only [Walk.mem_support_append_iff]
+      left
+      simp only [Walk.support_transfer] at s_in_au'_supp 
+      assumption
     --                          
   · let p_inG' := p.toDeleteEdge ⟦(u,v)⟧ h
     specialize hS p_inG'
@@ -302,7 +303,6 @@ example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : 
     -- use s, sinS
     -- simp only [Walk.support_transfer] at s_in_ab'_supp 
     -- assumption
-    sorry
 
   -- classical
   -- have G' := G.deleteEdges {⟦(u,v)⟧}
