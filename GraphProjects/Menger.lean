@@ -85,6 +85,7 @@ def Connector.reverse {G : SimpleGraph V} {A B : Set V} (C : G.Connector A B) :
     G.Connector B A where
   paths := sorry
   disjoint := sorry
+  disjointAB := sorry
 
 /-- Definition of a maximal AB-connector -/
 def IsMaxConnector (G : SimpleGraph V) (A B : Set V) (C : Connector G A B) : Prop := 
@@ -120,8 +121,9 @@ def Connector.ofInter {G : SimpleGraph V} (A B : Set V) : G.Connector A B where
   disjointAB := by 
     intro p hP 
     simp [Function.onFun] at hP 
-    --rw [Walk.interiorSupport_nil] 
-    sorry
+    obtain ⟨v,⟨hv,h⟩⟩ := hP  
+    rw [← h] 
+    simp [Walk.interiorSupport_nil] 
 
 lemma Connector_card_eq_card_inter (G : SimpleGraph V) (A B : Set V) : (#(Connector.ofInter A B : Connector G A B).paths) = (#(A ∩ B : Set V)) := by
   apply Cardinal.mk_range_eq 
