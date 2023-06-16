@@ -38,6 +38,20 @@ def PathBetween.reverse {G : SimpleGraph V} {A B : Set V} (p : G.PathBetween A B
   last_mem := p.first_mem
   path := p.path.reverse
 
+def PathBetween.append_fromSeparator {G : SimpleGraph V} {A B : Set V}
+ (hS : IsSeparator G A B S) (p : G.PathBetween A S) (q : G.PathBetween S B) 
+ (h : p.last = q.first) :
+  G.PathBetween A B where
+  first := p.first
+  last := q.last
+  first_mem := p.first_mem
+  last_mem := q.last_mem
+  path := ⟨Walk.append (p.path.1.copy rfl h) q.path.1 , by
+    rw [Walk.isPath_def] 
+    simp 
+    --rw [Walk.mem_support_append_iff.2]
+    sorry⟩ 
+
 /-- The vertices of a walk that aren't the start or end. -/
 def Walk.interiorSupport {G : SimpleGraph V} : {u v : V} → (p : G.Walk u v) → List V
   | _, _, .nil => []
@@ -64,12 +78,14 @@ lemma IsSeparator.comm {G : SimpleGraph V} {A B : Set V} {S : Set V}
 
 structure Connector (G : SimpleGraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
-  disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.interiorSupport}
+  disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.support}
+  disjointAB : ∀ p ∈ paths, (A ∪ B) ∩ {v | v ∈ p.path.1.interiorSupport} = ∅ 
 
 def Connector.reverse {G : SimpleGraph V} {A B : Set V} (C : G.Connector A B) :
     G.Connector B A where
   paths := sorry
   disjoint := sorry
+  disjointAB := sorry
 
 /-- Definition of a maximal AB-connector -/
 def IsMaxConnector (G : SimpleGraph V) (A B : Set V) (C : Connector G A B) : Prop := 
@@ -102,6 +118,12 @@ def Connector.ofInter {G : SimpleGraph V} (A B : Set V) : G.Connector A B where
     obtain ⟨v, hv, rfl⟩ := hp
     obtain ⟨w, hw, rfl⟩ := hq 
     simp [Function.onFun,Walk.interiorSupport_nil] 
+  disjointAB := by 
+    intro p hP 
+    simp [Function.onFun] at hP 
+    obtain ⟨v,⟨hv,h⟩⟩ := hP  
+    rw [← h] 
+    simp [Walk.interiorSupport_nil] 
 
 lemma Connector_card_eq_card_inter (G : SimpleGraph V) (A B : Set V) : (#(Connector.ofInter A B : Connector G A B).paths) = (#(A ∩ B : Set V)) := by
   apply Cardinal.mk_range_eq 
@@ -148,12 +170,12 @@ lemma edgeSet_empty_iff (G : SimpleGraph V) : G.edgeSet = ∅ ↔ G = ⊥ := by
 /-- Another characterization of the disjointness axiom of a connector. -/
 lemma Connector.disjoint' {G : SimpleGraph V} (C : G.Connector A B)
     (p q : G.PathBetween A B) (hp : p ∈ C.paths) (hq : q ∈ C.paths)
-    (v : V) (hvp : v ∈ p.path.1.interiorSupport) (hvq : v ∈ q.path.1.interiorSupport) :
-    p = q := by
+    (v : V) (hvp : v ∈ p.path.1.support) (hvq : v ∈ q.path.1.support) :
+    p = q := by 
   by_contra hpq
   have := C.disjoint hp hq hpq
-  rw [Function.onFun, Set.disjoint_iff_forall_ne] at this
-  exact this hvp hvq rfl
+  rw [Function.onFun, Set.disjoint_iff_forall_ne] at this 
+  exact this hvp hvq rfl 
 
 /-- There are finitely many paths between `A` and `B` in a finite graph. -/
 instance [Fintype V] [DecidableEq V] (G : SimpleGraph V) [DecidableRel G.Adj]
@@ -250,16 +272,17 @@ example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : 
       have : u ∉ q'.support := by 
         intro uinq'
         have uinr: u ∈ r'.support := r'.end_mem_support
-    · 
-    let q_inG' := q.toDeleteEdge ⟦(u,v)⟧ uv_notin_q
-    specialize hP q_inG'
-    rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
-    use s, sint
-    rw [hp]
-    simp only [Walk.mem_support_append_iff]
-    left
-    simp only [Walk.support_transfer] at s_in_au'_supp 
-    assumption
+        sorry
+      sorry
+    · let q_inG' := q.toDeleteEdge ⟦(u,v)⟧ (sorry)
+      specialize hP q_inG'
+      rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
+      use s, sint
+      rw [hp]
+      simp only [Walk.mem_support_append_iff]
+      left
+      simp only [Walk.support_transfer] at s_in_au'_supp 
+      assumption
     --                          
   · let p_inG' := p.toDeleteEdge ⟦(u,v)⟧ h
     specialize hS p_inG'
@@ -280,7 +303,6 @@ example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : 
     -- use s, sinS
     -- simp only [Walk.support_transfer] at s_in_ab'_supp 
     -- assumption
-    sorry
 
   -- classical
   -- have G' := G.deleteEdges {⟦(u,v)⟧}
