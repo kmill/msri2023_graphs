@@ -239,13 +239,18 @@ example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : 
   specialize hS a ha b hb
 
   by_cases ⟦(u,v)⟧ ∈ p.edges
-  · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
-    --have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
-    --rcases br with ⟨q, r⟩
+  · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h
     obtain ⟨q, r, hp⟩ := Iff.mp p.mem_support_iff_exists_append this
     have huP : u ∈ P := by simp [hPS]
     specialize hP a ha u huP
-    have uv_notin_q: ⟦(u,v)⟧ ∉ q.edges := sorry
+    have uinq : u ∈ q.support := by simp
+    by_cases vinq'': v ∈ (q.takeUntil u uinq).support
+    · have vinq: v ∈ q.support := by apply q.support_takeUntil_subset; exact (vinq'')
+      obtain ⟨q', r', hp'⟩ := Iff.mp q.mem_support_iff_exists_append vinq
+      have : u ∉ q'.support := by 
+        intro uinq'
+        have uinr: u ∈ r'.support := r'.end_mem_support
+    · 
     let q_inG' := q.toDeleteEdge ⟦(u,v)⟧ uv_notin_q
     specialize hP q_inG'
     rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
@@ -286,7 +291,6 @@ IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S := by
   rw [IsSeparator_iff] at * 
   intro a ha b hb p 
   have : (∀ (e : Sym2 V), e ∈ Walk.edges p → e ∈ edgeSet G) := by 
-    simp [edgeSet_deleteEdges] 
     intro e he 
     have := Walk.edges_subset_edgeSet p he
     rw [edgeSet_deleteEdges] at this 
