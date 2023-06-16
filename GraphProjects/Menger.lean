@@ -30,6 +30,14 @@ structure PathBetween (G : SimpleGraph V) (A B : Set V) where
   (last_mem : last ∈ B)
   (path : G.Path first last)
 
+def PathBetween.reverse {G : SimpleGraph V} {A B : Set V} (p : G.PathBetween A B) :
+    G.PathBetween B A where
+  first := p.last
+  last := p.first
+  first_mem := p.last_mem
+  last_mem := p.first_mem
+  path := p.path.reverse
+
 /-- The vertices of a walk that aren't the start or end. -/
 def Walk.interiorSupport {G : SimpleGraph V} : {u v : V} → (p : G.Walk u v) → List V
   | _, _, .nil => []
@@ -51,9 +59,17 @@ theorem Walk.support_eq_cons_interiorSupport {G : SimpleGraph V} {u v : V} (p : 
     | nil => simp [interiorSupport]
     | cons h p => simpa [interiorSupport] using ih
 
+lemma IsSeparator.comm {G : SimpleGraph V} {A B : Set V} {S : Set V}
+    (hs : IsSeparator G A B S) : IsSeparator G B A S := sorry
+
 structure Connector (G : SimpleGraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
   disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.interiorSupport}
+
+def Connector.reverse {G : SimpleGraph V} {A B : Set V} (C : G.Connector A B) :
+    G.Connector B A where
+  paths := sorry
+  disjoint := sorry
 
 /-- Definition of a maximal AB-connector -/
 def IsMaxConnector (G : SimpleGraph V) (A B : Set V) (C : Connector G A B) : Prop := 
@@ -201,31 +217,46 @@ IsSeparator G A B (S ∪ {u}) := by
     · simp at h 
       exact h.2
 
+/- An edge on a walk in G-e is an edge in G. -/
+lemma edge_transfer_from_DeleteEdge (G: SimpleGraph V) (m : Sym2 V) (p: Walk (G.deleteEdges {m}) s t): 
+  ∀ e : Sym2 V, e ∈ p.edges → e ∈ G.edgeSet := by 
+  intro e he
+  have := p.edges_subset_edgeSet he
+  have G'_le_G :=  deleteEdges_le G {m}
+  exact edgeSet_subset_edgeSet.2 G'_le_G this
+  
+  --exact G.deleteEdges_le {⟦(u,v)⟧}
+
 
 /- AP separator of G-e is also an AB separator of G -/
-  example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
+example (G : SimpleGraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
   (hS : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A B S)
    (hP : IsSeparator (G.deleteEdges {⟦(u,v)⟧}) A P T) : IsSeparator G A B T := by
-    classical
-    have G' := G.deleteEdges {⟦(u,v)⟧}
-    rw [IsSeparator_iff] at * 
-    intro a ha b hb p
-    specialize hS a ha b hb
-    by_cases ⟦(u,v)⟧ ∈ p.edges
-    · 
-      -- have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
-      have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
-      rcases br with ⟨q, r⟩ 
-      have huP : u ∈ P := by simp [hPS]
-      specialize hP a ha u huP
-      have uv_notin_q: ⟦(u,v)⟧ ∉ q.edges := sorry
-      have au_inG' := q.toDeleteEdge ⟦(u,v)⟧ uv_notin_q
-      specialize hP au_inG' 
-      rcases hP with ⟨ s, ⟨sint, sin_au'_supp⟩ ⟩
-      have : s ∈ p.support := by 
-      
+  classical
+  have G' := G.deleteEdges {⟦(u,v)⟧}
+  rw [IsSeparator_iff] at * 
+  intro a ha b hb p
+  specialize hS a ha b hb
 
-    · sorry
+  by_cases ⟦(u,v)⟧ ∈ p.edges
+  · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
+    --have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
+    --rcases br with ⟨q, r⟩
+    obtain ⟨q, r, hp⟩ := Iff.mp p.mem_support_iff_exists_append this
+    have huP : u ∈ P := by simp [hPS]
+    specialize hP a ha u huP
+    have uv_notin_q: ⟦(u,v)⟧ ∉ q.edges := sorry
+    let q_inG' := q.toDeleteEdge ⟦(u,v)⟧ uv_notin_q
+    specialize hP q_inG'
+    rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
+    use s, sint
+    rw [hp]
+    simp only [Walk.mem_support_append_iff]
+    left
+    simp only [Walk.support_transfer] at s_in_au'_supp 
+    assumption
+    --                          
+  · sorry
 
 theorem Menger : 
   IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
