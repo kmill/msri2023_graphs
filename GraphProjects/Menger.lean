@@ -240,54 +240,69 @@ IsSeparator G A B (S ∪ {u}) := by
       exact h.2
 
 /- An edge on a walk in G-e is an edge in G. -/
-lemma edge_transfer_from_DeleteEdge (G: Digraph V) (m : V × V) (p: Walk (G.deleteEdges {m}) s t): 
-  ∀ e : V×V, e ∈ p.edges → e ∈ G.edgeSet := by 
+lemma edge_transfer_from_DeleteEdge (G: Digraph V) (m : V × V) (p: Path (G.deleteEdges {m}) s t): 
+  ∀ e , e ∈ p.1.edges → e ∈ G.edgeSet := by 
   intro e he
-  have := p.edges_subset_edgeSet he
+  have := p.1.edges_subset_edgeSet he
   have G'_le_G :=  deleteEdges_le G {m}
   exact edgeSet_subset_edgeSet.2 G'_le_G this
   
   --exact G.deleteEdges_le {⟦(u,v)⟧}
 
+lemma aux (G : Digraph V) (p : G.Path u v) (h : (v, x) ∈ p.1.edges) : False := by
+  obtain ⟨p, hp⟩ := p
+  induction p
+  · simp at h
+  · simp at h
+    obtain (⟨rfl, rfl⟩ | h) := h
+    · simp at hp
+    · simp at hp
+      rename_i ih
+      exact ih hp.1 h
 
 /- AP separator of G-e is also an AB separator of G -/
 example (G : Digraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
   (hS : IsSeparator (G.deleteEdges {(u,v)}) A B S)
    (hP : IsSeparator (G.deleteEdges {(u,v)}) A P T) : IsSeparator G A B T := by
   classical
-  have G' := G.deleteEdges {(u,v)}
-  rw [IsSeparator_iff] at * 
+  let G' := G.deleteEdges {(u,v)}
+  rw [IsSeparator] at * 
   intro a ha b hb p
   specialize hS a ha b hb
 
-  by_cases (u,v) ∈ p.edges
-  · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h
-    obtain ⟨q, r, hp⟩ := Iff.mp p.mem_support_iff_exists_append this
+  by_cases (u,v) ∈ p.1.edges
+  · have : u ∈ p.1.support := p.1.fst_mem_support_of_mem_edges h
+    --have q : Path G' a u := ⟨p.1. , _⟩   --Path (p.1.takeUntil u this)
+    let q : Path 
+    obtain ⟨q, r, hp⟩ := Iff.mp p.1.mem_support_iff_exists_append this
     have huP : u ∈ P := by simp [hPS]
     specialize hP a ha u huP
     have uinq : u ∈ q.support := by simp
-    by_cases vinq'': v ∈ (q.takeUntil u uinq).support
-    · have vinq: v ∈ q.support := by apply q.support_takeUntil_subset; exact (vinq'')
-      obtain ⟨q', r', hp'⟩ := Iff.mp q.mem_support_iff_exists_append vinq
-      have : u ∉ q'.support := by 
-        intro uinq'
-        have uinr: u ∈ r'.support := r'.end_mem_support
-        sorry
-      sorry
-    · let q_inG' := q.toDeleteEdge (u,v) (sorry)
-      specialize hP q_inG'
-      rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
-      use s, sint
-      rw [hp]
-      simp only [Walk.mem_support_append_iff]
-      left
-      simp only [Walk.support_transfer] at s_in_au'_supp 
-      assumption
+    -- by_cases vinq'': v ∈ (q.takeUntil u uinq).support
+    -- · have vinq: v ∈ q.support := by apply q.support_takeUntil_subset; exact (vinq'')
+    --   obtain ⟨q', r', hp'⟩ := Iff.mp q.mem_support_iff_exists_append vinq
+    --   have : u ∉ q'.support := by 
+    --     intro uinq'
+    --     have uinr: u ∈ r'.support := r'.end_mem_support
+    --     sorry
+    --   sorry
+    have uv_notin_q : ¬(u, v) ∈ q.1.edges := by 
+      intro hh
+      exact aux G ⟨q, Walk.IsPath.takeUntil p.2 this⟩ hh
+    let q_inG' : q.transfer G' 
+    specialize hP q_inG'
+    rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
+    use s, sint
+    --rw [hp]
+    simp only [Walk.mem_support_append_iff]
+    sorry
+    -- simp only [Walk.support_transfer] at s_in_au'_supp 
+    -- assumption
     --                          
-  · let p_inG' := p.toDeleteEdge (u,v) h
-    specialize hS p_inG'
+  · let p_inG' := ⟨(p.1.toDeleteEdge (u,v) h), p.2⟩ 
+    specialize hS p_inG'.1
     rcases hS with ⟨ s, ⟨sinS, s_in_S_ab_G'_supp⟩⟩
-    let ⟨q, r, hp⟩ := Iff.mp p_inG'.mem_support_iff_exists_append s_in_S_ab_G'_supp
+    let ⟨q, r, hp⟩ := Iff.mp p_inG'.1.mem_support_iff_exists_append s_in_S_ab_G'_supp
     have s_inP : s ∈ P := by simp [sinS, hPS]
     specialize hP a ha s s_inP q
     rcases hP with ⟨  s1, ⟨s1_in_T, s1_in_q_support⟩ ⟩ 
