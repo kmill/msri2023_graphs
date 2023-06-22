@@ -9,6 +9,7 @@ import Mathlib.SetTheory.Cardinal.Basic
 import Mathlib.Tactic.DeriveFintype 
 import GraphProjects.ForMathlib
 
+
 /-! # Menger's theorem for simple graphs
 
 Following the proof in [...]
@@ -36,21 +37,9 @@ structure PathBetween (G : Digraph V) (A B : Set V) where
 --   last := p.first
 --   first_mem := p.last_mem
 --   last_mem := p.first_mem
---   path := p.path.reverse
+--   path := p.path.reverse 
 
-def PathBetween.append_fromSeparator {G : Digraph V} {A B : Set V}
- (hS : IsSeparator G A B S) (p : G.PathBetween A S) (q : G.PathBetween S B) 
- (h : p.last = q.first) :
-  G.PathBetween A B where
-  first := p.first
-  last := q.last
-  first_mem := p.first_mem
-  last_mem := q.last_mem
-  path := ⟨Walk.append (p.path.1.copy rfl h) q.path.1 , by
-    rw [Walk.isPath_def] 
-    simp 
-    --rw [Walk.mem_support_append_iff.2]
-    sorry⟩ 
+
 
 /-- The vertices of a walk that aren't the start or end. -/
 def Walk.interiorSupport {G : Digraph V} : {u v : V} → (p : G.Walk u v) → List V
@@ -143,6 +132,43 @@ lemma IsSeparator_iff :
     exact Walk.support_toPath_subset _ hsp
   · intro hs a ha b hb p
     exact hs a ha b hb p
+
+--Need to fix hypotheses: Add p1 : G.PathBetween A S p2: G.PathBetween A S p1.last ≠ p2.last -> p1,p2 disjoint
+def PathBetween.append_fromSeparator [DecidableEq V] {G : Digraph V} {A B : Set V}
+ (hS : IsSeparator G A B S) (p : G.PathBetween A S) (q : G.PathBetween S B) 
+ (h : p.last = q.first) (pintOnce : {v | v ∈ p.path.1.support} ∩ S = {p.last}) 
+ (qintOnce : {v | v ∈ q.path.1.support} ∩ S = {q.first}) : 
+  G.PathBetween A B where
+  first := p.first
+  last := q.last
+  first_mem := p.first_mem
+  last_mem := q.last_mem
+  path := ⟨Walk.append (p.path.1.copy rfl h) q.path.1 , by 
+    have : {v | v ∈ p.path.1.support} ∩ {v | v ∈ q.path.1.support} = {p.last} := by
+      ext
+      constructor
+      · intro h 
+        simp at h 
+        apply Set.mem_singleton_iff.mpr 
+        by_contra 
+        rename_i v hv 
+        let r := Walk.takeUntil p.path.1 v h.1 
+        let s := Walk.dropUntil q.path.1 v h.2 
+        let rs := Walk.append r s 
+        rw [IsSeparator_iff] at hS  
+        specialize hS p.first p.first_mem q.last q.last_mem rs 
+        obtain ⟨w,hw⟩ := hS 
+        have h' : w = p.last := by
+          sorry
+      
+        sorry
+      · sorry
+      sorry
+
+    rw [Walk.isPath_def] 
+    simp 
+    --rw [Walk.mem_support_append_iff.2]
+    sorry⟩ 
 
 
 lemma Walk_in_empty_nil (a b : V) (p : (⊥ : Digraph V).Walk a b) : p.length = 0  := by
@@ -249,41 +275,90 @@ lemma edge_transfer_from_DeleteEdge (G: Digraph V) (m : V × V) (p: Walk (G.dele
   
   --exact G.deleteEdges_le {⟦(u,v)⟧}
 
+lemma takeUntil_of_first_nil [DecidableEq V] 
+{u : V} {G : Digraph V} (p : Walk G u v) {h : u ∈ p.support} : p.takeUntil u h  = Walk.nil := by
+  cases p 
+  · rfl  
+  · rename_i v ha q 
+    unfold Walk.takeUntil 
+    simp 
 
-/- AP separator of G-e is also an AB separator of G -/
+/--In a digraph, if (u,v) is an edge in a path p, 
+then the path taken up to u does not contain the edge (u,v).-/
+lemma takeUntil_support_no_edge [DecidableEq V] [DecidableEq (V × V)] {G : Digraph V} {u v : V} {p : Walk G a b} (h : u ∈ p.support) 
+(he : (u,v) ∈ p.edges) : (u,v) ∉ (p.takeUntil u h).edges := by
+  have := Walk.count_edges_takeUntil_eq_zero p h v 
+  apply List.count_eq_zero.mp 
+  sorry
+
+/--Old/incomplete/bad proof; will remove once above 'sorry' is fixed-/
+lemma takeUntil_support_no_edge' [DecidableEq V] {G : Digraph V} {u v : V} {p : Walk G a b} (h : u ∈ p.support) 
+(he : (u,v) ∈ p.edges) : (u,v) ∉ (p.takeUntil u h).edges := by
+  induction p with
+  | nil =>  
+    simp at he 
+  | cons a q ih =>    
+    simp at *  
+    cases' he with heq h2 
+    rename_i x y z 
+    · --have qq := Walk.edges_copy (Walk.takeUntil (Walk.cons a q) u h) heq.1.symm rfl 
+      have : Walk.copy (Walk.takeUntil (Walk.cons a q) u h) heq.1.symm rfl  = Walk.nil := by 
+        have hxu := heq.1.symm
+        have hzz : z = z := by rfl 
+        rw [← Walk.takeUntil_copy (Walk.cons a q) hxu hzz (by 
+          simp 
+          left
+          exact heq.1 
+          )] 
+        rw [takeUntil_of_first_nil (Walk.copy (Walk.cons a q) hxu hzz)] 
+      rw [← Walk.edges_copy (Walk.takeUntil (Walk.cons a q) u h) heq.1.symm rfl] 
+      rw [this] 
+      simp  
+    · intro hu   
+      have : u ∈ Walk.support q := by
+        sorry
+      specialize ih this h2     
+      apply ih 
+      unfold Walk.takeUntil  
+      sorry
+
+lemma deleteEdges_support_eq {G : Digraph V} {a b: V} {p : Walk G a b} {s : Set _}
+{hp : ∀ e, e ∈ p.edges → ¬ e ∈ s} : 
+  p.support = (Walk.toDeleteEdges s p hp).support := by
+  simp  
+
+/--An AP separator of G-e is also an AB separator of G -/
 example (G : Digraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = S ∪ {u} ) 
   (hS : IsSeparator (G.deleteEdges {(u,v)}) A B S)
    (hP : IsSeparator (G.deleteEdges {(u,v)}) A P T) : IsSeparator G A B T := by
   classical
   have G' := G.deleteEdges {(u,v)}
   rw [IsSeparator_iff] at * 
-  intro a ha b hb p
+  intro a ha b hb p 
   specialize hS a ha b hb
 
   by_cases (u,v) ∈ p.edges
-  · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h
-    obtain ⟨q, r, hp⟩ := Iff.mp p.mem_support_iff_exists_append this
-    have huP : u ∈ P := by simp [hPS]
-    specialize hP a ha u huP
-    have uinq : u ∈ q.support := by simp
-    by_cases vinq'': v ∈ (q.takeUntil u uinq).support
-    · have vinq: v ∈ q.support := by apply q.support_takeUntil_subset; exact (vinq'')
-      obtain ⟨q', r', hp'⟩ := Iff.mp q.mem_support_iff_exists_append vinq
-      have : u ∉ q'.support := by 
-        intro uinq'
-        have uinr: u ∈ r'.support := r'.end_mem_support
-        sorry
-      sorry
-    · let q_inG' := q.toDeleteEdge (u,v) (sorry)
-      specialize hP q_inG'
-      rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
-      use s, sint
-      rw [hp]
-      simp only [Walk.mem_support_append_iff]
-      left
-      simp only [Walk.support_transfer] at s_in_au'_supp 
-      assumption
-    --                          
+  · have uinp : u ∈ p.support := p.fst_mem_support_of_mem_edges h   
+    specialize hP a ha u (by simp [hPS])
+    have hp : ∀ (e : V × V), e ∈ Walk.edges (Walk.takeUntil p u uinp) → ¬ (e ∈ ({(u,v)} : Set _)) := by  
+      intro e he
+      simp 
+      intro euv
+      have := takeUntil_support_no_edge uinp h 
+      rw [euv] at he 
+      exact this he
+    let q : Walk (deleteEdges G {(u, v)}) a u := 
+    (Walk.toDeleteEdges {(u,v)} (Walk.takeUntil p u uinp) hp) 
+    specialize hP q 
+    obtain ⟨s,hs⟩ := hP 
+    use s
+    constructor
+    · exact hs.1 
+    · apply Walk.support_takeUntil_subset p uinp   
+      have : Walk.support q = Walk.support (Walk.takeUntil p u uinp) := by
+        simp
+      rw [this] at hs
+      exact hs.2
   · let p_inG' := p.toDeleteEdge (u,v) h
     specialize hS p_inG'
     rcases hS with ⟨ s, ⟨sinS, s_in_S_ab_G'_supp⟩⟩
@@ -297,47 +372,7 @@ example (G : Digraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = 
     rw [Eq.symm hp] at s1_in_append_p_in_G'
     simp only [Walk.support_transfer] at s1_in_append_p_in_G'
     exact s1_in_append_p_in_G'
-    
-    
-
-    -- use s, sinS
-    -- simp only [Walk.support_transfer] at s_in_ab'_supp 
-    -- assumption
-
-  -- classical
-  -- have G' := G.deleteEdges {⟦(u,v)⟧}
-  -- rw [IsSeparator_iff] at * 
-  -- intro a ha b hb p
-  -- specialize hS a ha b hb
-  -- by_cases ⟦(u,v)⟧ ∈ p.edges
-  -- · have : u ∈ p.support := p.fst_mem_support_of_mem_edges h 
-  -- --have br : ∃ (q : G.Walk a u) (r : G.Walk u b), p = q.append r := Iff.mp p.mem_support_iff_exists_append this
-  -- --rcases br with ⟨q, r⟩ 
-  --   have q := p.takeUntil u this
-  --   have huP : u ∈ P := by simp [hPS]
-  --   specialize hP a ha u huP
-  --   have uv_notin_q: ⟦(u,v)⟧ ∉ q.edges := sorry
-  --   have q_inG' := q.toDeleteEdge ⟦(u,v)⟧ uv_notin_q
-  --   specialize hP q_inG' 
-  --   rcases hP with ⟨ s, ⟨sint, s_in_au'_supp⟩⟩
-  --   have : q = q_inG'.transfer G _
-  --   have sInq : s ∈ q.support := by
-  --     obtain := Iff.mp (Walk.mem_verts_toSubgraph q) -- trying to use subgraph to get s in support of q...
-  --     sorry
-  --   have uInWalkab : u ∈ p.support := sorry
-  --   have r := p.dropUntil u uInWalkab
-  --   have subset_walk := Walk.subset_support_append_left q r 
-    
-  --   sorry
-  -- · sorry
-------------------------------------------------
--- example (G : Digraph V) (A B P : Set V) (u s : V) (p' : G.Walk a u) (p : G.Walk a b) (h2 : s ∈ p'.support) 
--- : s ∈ p.support := by
---   -- have reverse_p: G.Walk b a := Walk.reverse p
---   obtain := Walk.dropUntil 
--- -- obtain := Walk.subset_support_append_left p' 
---   sorry
-------------------------------------------------
+  
 theorem Menger : 
   IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
     ∃ C : Connector G A B, (#C.paths) = (#S) := by sorry
