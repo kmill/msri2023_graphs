@@ -13,6 +13,8 @@ The relation describes which pairs of vertices are adjacent.
 structure Digraph (V : Type u) where
   Adj : V → V → Prop
 
+pp_extended_field_notation Digraph.Adj
+
 noncomputable instance {V : Type u} [Fintype V] : Fintype (Digraph V) := by
   classical exact Fintype.ofInjective Digraph.Adj Digraph.ext
 
