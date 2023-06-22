@@ -266,14 +266,25 @@ IsSeparator G A B (S ∪ {u}) := by
       exact h.2
 
 /- An edge on a walk in G-e is an edge in G. -/
-lemma edge_transfer_from_DeleteEdge (G: Digraph V) (m : V × V) (p: Walk (G.deleteEdges {m}) s t): 
-  ∀ e : V×V, e ∈ p.edges → e ∈ G.edgeSet := by 
+lemma edge_transfer_from_DeleteEdge (G: Digraph V) (m : V × V) (p: Path (G.deleteEdges {m}) s t): 
+  ∀ e , e ∈ p.1.edges → e ∈ G.edgeSet := by 
   intro e he
-  have := p.edges_subset_edgeSet he
+  have := p.1.edges_subset_edgeSet he
   have G'_le_G :=  deleteEdges_le G {m}
   exact edgeSet_subset_edgeSet.2 G'_le_G this
   
   --exact G.deleteEdges_le {⟦(u,v)⟧}
+
+lemma aux (G : Digraph V) (p : G.Path u v) (h : (v, x) ∈ p.1.edges) : False := by
+  obtain ⟨p, hp⟩ := p
+  induction p
+  · simp at h
+  · simp at h
+    obtain (⟨rfl, rfl⟩ | h) := h
+    · simp at hp
+    · simp at hp
+      rename_i ih
+      exact ih hp.1 h
 
 lemma takeUntil_of_first_nil [DecidableEq V] 
 {u : V} {G : Digraph V} (p : Walk G u v) {h : u ∈ p.support} : p.takeUntil u h  = Walk.nil := by
@@ -336,7 +347,6 @@ example (G : Digraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = 
   rw [IsSeparator_iff] at * 
   intro a ha b hb p 
   specialize hS a ha b hb
-
   by_cases (u,v) ∈ p.edges
   · have uinp : u ∈ p.support := p.fst_mem_support_of_mem_edges h   
     specialize hP a ha u (by simp [hPS])
@@ -361,8 +371,8 @@ example (G : Digraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = 
       exact hs.2
   · let p_inG' := p.toDeleteEdge (u,v) h
     specialize hS p_inG'
-    rcases hS with ⟨ s, ⟨sinS, s_in_S_ab_G'_supp⟩⟩
-    let ⟨q, r, hp⟩ := Iff.mp p_inG'.mem_support_iff_exists_append s_in_S_ab_G'_supp
+    rcases hS with ⟨ s, ⟨sinS, s_in_S_ab_G'_supp⟩⟩ 
+    let ⟨q, r, hp⟩ := Iff.mp Walk.mem_support_iff_exists_append s_in_S_ab_G'_supp
     have s_inP : s ∈ P := by simp [sinS, hPS]
     specialize hP a ha s s_inP q
     rcases hP with ⟨  s1, ⟨s1_in_T, s1_in_q_support⟩ ⟩ 
@@ -371,7 +381,7 @@ example (G : Digraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = 
     have s1_in_append_p_in_G': s1 ∈ (Walk.append q r).support :=  (Walk.mem_support_append_iff q r).2 this
     rw [Eq.symm hp] at s1_in_append_p_in_G'
     simp only [Walk.support_transfer] at s1_in_append_p_in_G'
-    exact s1_in_append_p_in_G'
+    exact s1_in_append_p_in_G' 
   
 theorem Menger : 
   IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
