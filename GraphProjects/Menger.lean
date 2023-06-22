@@ -8,6 +8,7 @@ import GraphProjects.DigraphConnectivity
 import Mathlib.SetTheory.Cardinal.Basic
 import Mathlib.Tactic.DeriveFintype 
 import GraphProjects.ForMathlib
+import GraphProjects.DigraphInduction
 
 
 /-! # Menger's theorem for simple graphs
@@ -296,11 +297,13 @@ lemma takeUntil_of_first_nil [DecidableEq V]
 
 /--In a digraph, if (u,v) is an edge in a path p, 
 then the path taken up to u does not contain the edge (u,v).-/
-lemma takeUntil_support_no_edge [DecidableEq V] [DecidableEq (V × V)] {G : Digraph V} {u v : V} {p : Walk G a b} (h : u ∈ p.support) 
-(he : (u,v) ∈ p.edges) : (u,v) ∉ (p.takeUntil u h).edges := by
+lemma takeUntil_support_no_edge [DecidableEq V] {G : Digraph V} {u v : V} {p : Walk G a b} (h : u ∈ p.support) 
+    (he : (u,v) ∈ p.edges) : (u,v) ∉ (p.takeUntil u h).edges := by
   have := Walk.count_edges_takeUntil_eq_zero p h v 
   apply List.count_eq_zero.mp 
-  sorry
+  convert this
+  ext ⟨v, w⟩ ⟨v', w'⟩
+  simp [BEq.beq]
 
 /--Old/incomplete/bad proof; will remove once above 'sorry' is fixed-/
 lemma takeUntil_support_no_edge' [DecidableEq V] {G : Digraph V} {u v : V} {p : Walk G a b} (h : u ∈ p.support) 
