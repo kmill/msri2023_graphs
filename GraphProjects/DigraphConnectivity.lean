@@ -841,8 +841,8 @@ variable [DecidableEq V]
 /-- Given a vertex in the support of a path, give the path up until (and including) that vertex. -/
 def takeUntil {v w : V} : ∀ (p : G.Walk v w) (u : V), u ∈ p.support → G.Walk v u
   | nil, u, h => by rw [mem_support_nil_iff.mp h]
-  | cons r p, u, h =>
-    if hx : v = u then
+  | cons r p, u, h => 
+    if hx : v = u then 
       by subst u; exact Walk.nil
     else
       cons r (takeUntil p u <| by cases h; exact (hx rfl).elim; assumption)
@@ -897,8 +897,8 @@ theorem count_support_takeUntil_eq_one {u v w : V} (p : G.Walk v w) (h : u ∈ p
       split_ifs with h' <;> rw [eq_comm] at h' <;> subst_vars <;> simp! [*, List.count_cons]
 #align simple_graph.walk.count_support_take_until_eq_one Digraph.Walk.count_support_takeUntil_eq_one
 
-theorem count_edges_takeUntil_le_one {u v w : V} (p : G.Walk v w) (h : u ∈ p.support) (x : V) :
-    (p.takeUntil u h).edges.count (u, x) ≤ 1 := by
+theorem count_edges_takeUntil_eq_zero {u v w : V} (p : G.Walk v w) (h : u ∈ p.support) (x : V) :
+    (p.takeUntil u h).edges.count (u, x) = 0 := by
   induction' p with u' u' v' w' ha p' ih
   · rw [mem_support_nil_iff] at h
     subst u
@@ -1137,7 +1137,7 @@ theorem bypass_copy {u v u' v'} (p : G.Walk u v) (hu : u = u') (hv : v = v') :
 #align simple_graph.walk.bypass_copy Digraph.Walk.bypass_copy
 
 theorem bypass_isPath {u v : V} (p : G.Walk u v) : p.bypass.IsPath := by
-  induction p with
+  induction p with 
   | nil => simp!
   | cons _ p' ih =>
     simp only [bypass]
