@@ -33,3 +33,18 @@ theorem deleteEdges_induction [Finite V] {motive : Digraph V → Prop}
       simp only [h, or_true, true_and]
       rintro rfl
       exact absurd h he
+
+/-- Note: DigraphExtra has `lt_iff_eq_deleteEdges` which might be useful when applying this. -/
+@[elab_as_elim]
+protected theorem strong_induction [Finite V] {motive : Digraph V → Prop}
+    (hind : ∀ G : Digraph V, (∀ G', G' < G → motive G') → motive G)
+    (G : Digraph V) : motive G := by
+  classical
+  have : Fintype V := Fintype.ofFinite V
+  generalize hs : G.edgeSet.toFinset = s
+  induction s using Finset.strongInduction generalizing G with
+  | _ s ih =>
+    cases hs
+    apply hind
+    intros G' hG
+    exact ih G'.edgeSet.toFinset (by simpa using hG) _ rfl
