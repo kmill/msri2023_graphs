@@ -301,8 +301,8 @@ lemma takeUntil_support_no_edge [DecidableEq V] {G : Digraph V} {u v : V} {p : W
     (he : (u,v) ∈ p.edges) : (u,v) ∉ (p.takeUntil u h).edges := by
   have := Walk.count_edges_takeUntil_eq_zero p h v 
   apply List.count_eq_zero.mp 
-  convert this
-  ext ⟨v, w⟩ ⟨v', w'⟩
+  convert this 
+  ext ⟨v, w⟩ ⟨v', w'⟩ 
   simp [BEq.beq]
 
 /--Old/incomplete/bad proof; will remove once above 'sorry' is fixed-/
@@ -385,14 +385,21 @@ example (G : Digraph V) (A B P S : Set V) (u v : V) (huv: G.Adj u v) (hPS : P = 
     rw [Eq.symm hp] at s1_in_append_p_in_G'
     simp only [Walk.support_transfer] at s1_in_append_p_in_G'
     exact s1_in_append_p_in_G' 
-  
-theorem Menger : 
-  IsSeparator G A B S ∧ (∀ T : Set _, IsSeparator G A B T → (#T) ≥ (#S)) → 
-    ∃ C : Connector G A B, (#C.paths) = (#S) := by sorry
--- example (G : Digraph V) (A B : Set V) (u v : V) (huv: G.Adj u v) (p : G.Walk a b) : 
---   ∃ (q: G.Walk a u), (r: G.Walk u v), (s: G.Walk v b) := by
--- sorry
 
+lemma base_case' (hsep : IsSeparator ⊥ A B S) 
+ (hmin : ∀ T : Set _, IsSeparator ⊥ A B T → (#T) ≥ (#S)) : ∃ C : Connector ⊥ A B, (#C.paths) = (#S) := by  
+  use Connector.ofInter A B 
+  rw [Connector_card_eq_card_inter] 
+  have := hmin (A ∩ B)
+  exact le_antisymm (card_Separator_ge_inter ⊥ hsep) (this IsSeparator_inter_empty)  
+
+theorem Menger (hsep : IsSeparator G A B S) (hmin : ∀ T, IsSeparator G A B T → (#T) ≥ (#S)) :
+    ∃ C : Connector G A B, (#C.paths) = (#S) := by
+  induction G using Digraph.deleteEdges_induction generalizing A B S with
+  | hbot =>  
+    exact base_case' hsep hmin 
+  | hdelete G v w hvw ih => 
+    sorry
 
 lemma setCardAddOneMem (T : Set V) (u : V) (h: ¬ u ∈ T) : (#(T ∪ {u} : Set V)) = (#T) + 1 := by
   have disjoint: Disjoint T {u} := by
