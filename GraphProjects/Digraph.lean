@@ -211,33 +211,39 @@ section EdgeSet
 variable {G₁ G₂ : Digraph V}
 
 /-- The edges of G consist of the ordered pairs of vertices related by
-`G.Adj`. This is the order embedding; for the edge set of a particular graph, see
+`G.Adj`. This is the order isomorphism; for the edge set of a particular graph, see
 `Digraph.edgeSet`.
 -/
-def edgeSetEmbedding (V : Type _) : Digraph V ↪o Set (V × V) :=
-  OrderEmbedding.ofMapLEIff (fun G => {e | G.Adj e.1 e.2}) fun _ _ =>
-    ⟨fun h a b => @h (a, b), fun h _ h' => h h'⟩
+def edgeSetIso (V : Type _) : Digraph V ≃o Set (V × V) where
+  toFun G := {e | G.Adj e.1 e.2}
+  invFun s := ⟨fun v w ↦ (v, w) ∈ s⟩
+  left_inv := by intro G; simp
+  right_inv := by intro s; simp
+  map_rel_iff' := by intro G G'; simp only [Equiv.coe_fn_mk, Set.le_eq_subset, Set.setOf_subset_setOf, Prod.forall]; apply Iff.rfl
+
+@[simp]
+lemma edgeSetIso_symm_adj {s : Set (V × V)} : ((edgeSetIso V).symm s).Adj v w ↔ (v, w) ∈ s := Iff.rfl
 
 /-- `G.edgeSet` is the edge set for `G`.
-This is an abbreviation for `edgeSetEmbedding G` that permits dot notation. -/
-abbrev edgeSet (G : Digraph V) : Set (V × V) := edgeSetEmbedding V G
+This is an abbreviation for `edgeSetIso G` that permits dot notation. -/
+abbrev edgeSet (G : Digraph V) : Set (V × V) := edgeSetIso V G
 
 @[simp]
 theorem mem_edgeSet : (v, w) ∈ G.edgeSet ↔ G.Adj v w :=
   Iff.rfl
 
-theorem edgeSet_inj : G₁.edgeSet = G₂.edgeSet ↔ G₁ = G₂ := (edgeSetEmbedding V).eq_iff_eq
+theorem edgeSet_inj : G₁.edgeSet = G₂.edgeSet ↔ G₁ = G₂ := (edgeSetIso V).eq_iff_eq
 
 @[simp]
 theorem edgeSet_subset_edgeSet : edgeSet G₁ ⊆ edgeSet G₂ ↔ G₁ ≤ G₂ :=
-  (edgeSetEmbedding V).le_iff_le
+  (edgeSetIso V).le_iff_le
 
 @[simp]
 theorem edgeSet_ssubset_edgeSet : edgeSet G₁ ⊂ edgeSet G₂ ↔ G₁ < G₂ :=
-  (edgeSetEmbedding V).lt_iff_lt
+  (edgeSetIso V).lt_iff_lt
 
 theorem edgeSet_injective : Injective (edgeSet : Digraph V → Set (V × V)) :=
-  (edgeSetEmbedding V).injective
+  (edgeSetIso V).injective
 
 alias edgeSet_subset_edgeSet ↔ _ edgeSet_mono
 
@@ -302,8 +308,7 @@ end EdgeSet
 graph's edge set, if present.
 
 See also: `Digraph.Subgraph.deleteEdges`. -/
-def deleteEdges (s : Set (V × V)) : Digraph V
-    where
+def deleteEdges (s : Set (V × V)) : Digraph V where
   Adj x y := G.Adj x y ∧ ¬ (x, y) ∈ s
 
 @[simp]

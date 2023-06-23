@@ -34,6 +34,26 @@ theorem deleteEdges_induction [Finite V] {motive : Digraph V → Prop}
       rintro rfl
       exact absurd h he
 
+/-- `deleteEdges_induction` in terms of adding edges instead of deleting them. -/
+@[elab_as_elim]
+theorem deleteEdges_induction' [Finite V] {motive : Digraph V → Prop}
+    (hbot : motive ⊥)
+    (hdelete : ∀ (G : Digraph V) (v w : V), ¬ G.Adj v w → motive G → motive (G ⊔ (edgeSetIso V).symm {(v, w)}))
+    (G : Digraph V) : motive G := by
+  induction G using deleteEdges_induction with
+  | hbot => exact hbot
+  | hdelete G v w hvw ih =>
+    convert hdelete (G.deleteEdges {(v, w)}) v w (by simp) ih
+    ext a b
+    simp only [Set.le_eq_subset, ge_iff_le, sup_adj, deleteEdges_adj, Set.mem_singleton_iff, Prod.mk.injEq, not_and]
+    rw [edgeSetIso_symm_adj]
+    simp only [Set.mem_singleton_iff, Prod.mk.injEq]
+    constructor
+    · tauto
+    · rintro (h | ⟨rfl, rfl⟩)
+      · exact h.1
+      · assumption
+
 /-- Note: DigraphExtra has `lt_iff_eq_deleteEdges` which might be useful when applying this. -/
 @[elab_as_elim]
 protected theorem strong_induction [Finite V] {motive : Digraph V → Prop}
