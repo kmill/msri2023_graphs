@@ -71,6 +71,25 @@ structure Connector (G : Digraph V) (A B : Set V) where
   disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.support}
   disjointAB : ∀ p ∈ paths, (A ∪ B) ∩ {v | v ∈ p.path.1.interiorSupport} = ∅ 
 
+/--Given a PathBetween in a graph with deleted edge, constructs a PathBetween in the original graph-/
+def PathBetween.ofDeleteEdge (G : Digraph V) {A B : Set V} (P : PathBetween (G.deleteEdges {(u,v)}) A B)
+  : PathBetween G A B where
+  first := P.first
+  last := P.last
+  first_mem := P.first_mem
+  last_mem := P.last_mem
+  path := ⟨Walk.transfer P.path.1 G (by 
+    intro e he
+    have : e ∈ edgeSet (G.deleteEdges {(u,v)}) := Walk.edges_subset_edgeSet P.path.1 he 
+    exact Set.mem_of_mem_diff this),
+  Walk.IsPath.transfer _ P.path.2 ⟩  
+
+def Connector.ofDeleteEdge {G : Digraph V} {A B : Set V} {u v : V} 
+(C : (G.deleteEdges {(u,v)}).Connector A B) : G.Connector A B where 
+  paths := Set.image (fun P => PathBetween.ofDeleteEdge G P) C.paths 
+  disjoint := sorry
+  disjointAB := sorry
+
 def Connector.reverse {G : Digraph V} {A B : Set V} (C : G.Connector A B) :
     G.Connector B A where
   paths := sorry
@@ -188,6 +207,11 @@ lemma IsSeparator_inter_empty : IsSeparator (⊥ : Digraph V) A B (A ∩ B) := b
   · rename_i ha hp 
     simp at ha 
 
+/-Every finite digraph has a separator of minimal size-/
+lemma exists_minSeparator [Finite V] (G : Digraph V) (A B : Set V) :
+ ∃(S : Set V), IsSeparator G A B S ∧ ∀ T, IsSeparator G A B T → (#T) ≥ (#S) 
+:= by
+  sorry
 
 
 lemma edgeSet_empty_iff (G : Digraph V) : G.edgeSet = ∅ ↔ G = ⊥ := by
@@ -393,12 +417,24 @@ lemma base_case' (hsep : IsSeparator ⊥ A B S)
   have := hmin (A ∩ B)
   exact le_antisymm (card_Separator_ge_inter ⊥ hsep) (this IsSeparator_inter_empty)  
 
-theorem Menger (hsep : IsSeparator G A B S) (hmin : ∀ T, IsSeparator G A B T → (#T) ≥ (#S)) :
+theorem Menger [Finite V] {G : Digraph V} (hsep : IsSeparator G A B S) (hmin : ∀ T, IsSeparator G A B T → (#T) ≥ (#S)) :
     ∃ C : Connector G A B, (#C.paths) = (#S) := by
   induction G using Digraph.deleteEdges_induction generalizing A B S with
   | hbot =>  
     exact base_case' hsep hmin 
   | hdelete G v w hvw ih => 
+    obtain ⟨T,Tsep,Tmin⟩ := exists_minSeparator (deleteEdges G {(v,w)}) A B  
+    have : (#T) = (#S) ∨ (#T) < (#S) := by
+
+      sorry
+    cases' this with heq hle 
+    · specialize ih Tsep Tmin 
+      rw [← heq]
+      obtain ⟨C,hC⟩ := ih 
+      use Connector.ofDeleteEdge C 
+      sorry 
+    · 
+      sorry
     sorry
 
 lemma setCardAddOneMem (T : Set V) (u : V) (h: ¬ u ∈ T) : (#(T ∪ {u} : Set V)) = (#T) + 1 := by
@@ -450,3 +486,4 @@ lemma minSeparator_delete_card_atMost (u v : V) (G : Digraph V) (A B S T: Set V)
   rw [← this]
   apply minS.2 (T ∪ {u}) 
   exact h
+
