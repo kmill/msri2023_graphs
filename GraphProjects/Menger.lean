@@ -26,6 +26,7 @@ def IsSeparator (G : Digraph V) (A B : Set V) (S : Set V) : Prop :=
 def IsMinSeparator (G : Digraph V) (A B : Set V) (S : Set V)  : Prop := 
   (IsSeparator G A B S) ∧ (∀ T : Set _, IsSeparator G A B T → (# T) ≥ (#S))
 
+@[ext] 
 structure PathBetween (G : Digraph V) (A B : Set V) where
   (first last : V)
   (first_mem : first ∈ A)
@@ -70,6 +71,28 @@ structure Connector (G : Digraph V) (A B : Set V) where
   paths : Set (G.PathBetween A B)
   disjoint : paths.PairwiseDisjoint fun p ↦ {v | v ∈ p.path.1.support}
   disjointAB : ∀ p ∈ paths, (A ∪ B) ∩ {v | v ∈ p.path.1.interiorSupport} = ∅ 
+
+/-A connector's cardinality is the same as the cardinality of the set of first vertices from its paths-/
+lemma Connector_card_eq_card_firsts {G : Digraph V} {A B : Set V} {C : Connector G A B} :
+   (#C.paths) = (#(Set.image (fun P => P.first) C.paths)):= by
+  rw [Set.image_eq_range] 
+  apply Eq.symm 
+  apply Cardinal.mk_range_eq 
+  intro P Q hPQ 
+  have disj := C.disjoint
+  dsimp at disj 
+  simp at hPQ 
+  have hP : P.1.first ∈ P.1.path.1.support := by
+    simp 
+  have hQ : Q.1.first ∈ Q.1.path.1.support := by
+    simp 
+  have : P.1 = Q.1 := by
+    apply Set.PairwiseDisjoint.elim_set disj P.2 Q.2 _ _ _ 
+    exact P.1.first 
+    exact hP 
+    rw [hPQ] 
+    exact hQ
+  exact SetCoe.ext this 
 
 /--Given a PathBetween in a graph with deleted edge, constructs a PathBetween in the original graph-/
 def PathBetween.ofDeleteEdge (G : Digraph V) {A B : Set V} (P : PathBetween (G.deleteEdges {(u,v)}) A B)
@@ -139,6 +162,40 @@ lemma Connector_card_eq_card_inter (G : Digraph V) (A B : Set V) : (#(Connector.
   intro u v 
   simp  
   exact fun a => SetCoe.ext a 
+
+/-Connector obtained by deleting an edge has the same set of first vertices in its set of paths-/
+lemma connector_ofDeleteEdge_firsts_eq {u v : V} {G : Digraph V} {A B : Set V} (C : ((G.deleteEdges {(u,v)}).Connector A B))  : 
+  (#↑((fun P => P.first) '' (Connector.ofDeleteEdge C).paths))
+   = (#↑((fun P => P.first) '' C.paths)) := by
+  have h : (fun P => P.first) '' (Connector.ofDeleteEdge C).paths 
+  = (fun P => P.first) '' C.paths := by
+    ext
+    constructor
+    · intro hw
+      rename_i w
+      simp at * 
+      obtain ⟨p,hp,pfst⟩ := hw 
+      unfold Connector.ofDeleteEdge at hp
+      simp at hp 
+      obtain ⟨q,hq,h⟩ := hp 
+      use q 
+      constructor
+      · exact hq
+      · apply_fun PathBetween.first at h
+        rw [pfst] at h 
+        exact h 
+    · intro hv 
+      rename_i v
+      simp at * 
+      obtain ⟨p,hp,pfst⟩ := hv 
+      use p.ofDeleteEdge 
+      constructor
+      · unfold Connector.ofDeleteEdge 
+        simp 
+        use p 
+        exact ⟨hp, rfl⟩ 
+      · simpa [pfst] 
+  simp [h] 
 
 /-- Separators via `Path` is the same as separators via `Walk`. -/
 lemma IsSeparator_iff :
@@ -425,17 +482,16 @@ theorem Menger [Finite V] {G : Digraph V} (hsep : IsSeparator G A B S) (hmin : �
   | hdelete G v w hvw ih => 
     obtain ⟨T,Tsep,Tmin⟩ := exists_minSeparator (deleteEdges G {(v,w)}) A B  
     have : (#T) = (#S) ∨ (#T) < (#S) := by
-
       sorry
     cases' this with heq hle 
     · specialize ih Tsep Tmin 
-      rw [← heq]
+      rw [← heq] 
       obtain ⟨C,hC⟩ := ih 
       use Connector.ofDeleteEdge C 
-      sorry 
-    · 
-      sorry
-    sorry
+      rw [← hC]
+      rw [Connector_card_eq_card_firsts, Connector_card_eq_card_firsts] 
+      apply connector_ofDeleteEdge_firsts_eq  
+    · sorry
 
 lemma setCardAddOneMem (T : Set V) (u : V) (h: ¬ u ∈ T) : (#(T ∪ {u} : Set V)) = (#T) + 1 := by
   have disjoint: Disjoint T {u} := by
