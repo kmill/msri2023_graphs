@@ -355,8 +355,6 @@ lemma edge_transfer_from_DeleteEdge (G: Digraph V) (m : V × V) (p: Path (G.dele
   have G'_le_G :=  deleteEdges_le G {m}
   exact edgeSet_subset_edgeSet.2 G'_le_G this
   
-  --exact G.deleteEdges_le {⟦(u,v)⟧}
-
 lemma aux (G : Digraph V) (p : G.Path u v) (h : (v, x) ∈ p.1.edges) : False := by
   obtain ⟨p, hp⟩ := p
   induction p
@@ -474,6 +472,26 @@ lemma base_case' (hsep : IsSeparator ⊥ A B S)
   have := hmin (A ∩ B)
   exact le_antisymm (card_Separator_ge_inter ⊥ hsep) (this IsSeparator_inter_empty)  
 
+lemma min_Separator_ofDelete_le (hS : IsMinSeparator G A B S) (hT : IsMinSeparator (G.deleteEdges {(u,v)}) A B T) : 
+(#T) ≤ (#S) := by
+  have : IsSeparator (G.deleteEdges {(u,v)}) A B S := by
+    rw [IsSeparator] 
+    intro a ha b hb p
+    obtain ⟨hsep,hmin⟩ := hS 
+    let p' := p.1.transfer G (by 
+    intro e he
+    exact edge_transfer_from_DeleteEdge G (u, v) p e he
+    )   
+    specialize hsep a ha b hb ⟨p',Walk.IsPath.transfer _ _ ⟩ 
+    simp 
+    obtain ⟨s,hs,hs'⟩ := hsep
+    use s
+    simp at hs'
+    exact ⟨hs,hs'⟩ 
+  rw [IsMinSeparator] at * 
+  exact hT.2 S this 
+  
+
 theorem Menger [Finite V] {G : Digraph V} (hsep : IsSeparator G A B S) (hmin : ∀ T, IsSeparator G A B T → (#T) ≥ (#S)) :
     ∃ C : Connector G A B, (#C.paths) = (#S) := by
   induction G using Digraph.deleteEdges_induction generalizing A B S with
@@ -481,8 +499,7 @@ theorem Menger [Finite V] {G : Digraph V} (hsep : IsSeparator G A B S) (hmin : �
     exact base_case' hsep hmin 
   | hdelete G v w hvw ih => 
     obtain ⟨T,Tsep,Tmin⟩ := exists_minSeparator (deleteEdges G {(v,w)}) A B  
-    have : (#T) = (#S) ∨ (#T) < (#S) := by
-      sorry
+    have : (#T) = (#S) ∨ (#T) < (#S) := Iff.mp le_iff_eq_or_lt (min_Separator_ofDelete_le ⟨hsep,hmin⟩ ⟨Tsep,Tmin⟩)
     cases' this with heq hle 
     · specialize ih Tsep Tmin 
       rw [← heq] 
