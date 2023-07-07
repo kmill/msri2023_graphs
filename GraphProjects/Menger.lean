@@ -270,7 +270,6 @@ lemma exists_minSeparator [Finite V] (G : Digraph V) (A B : Set V) :
 := by
   sorry
 
-
 lemma edgeSet_empty_iff (G : Digraph V) : G.edgeSet = ∅ ↔ G = ⊥ := by
   rw [← edgeSet_inj] 
   simp 
@@ -491,31 +490,9 @@ lemma min_Separator_ofDelete_le (hS : IsMinSeparator G A B S) (hT : IsMinSeparat
   rw [IsMinSeparator] at * 
   exact hT.2 S this 
   
-
-theorem Menger [Finite V] {G : Digraph V} (hsep : IsSeparator G A B S) (hmin : ∀ T, IsSeparator G A B T → (#T) ≥ (#S)) :
-    ∃ C : Connector G A B, (#C.paths) = (#S) := by
-  induction G using Digraph.deleteEdges_induction generalizing A B S with
-  | hbot =>  
-    exact base_case' hsep hmin 
-  | hdelete G v w hvw ih => 
-    obtain ⟨T,Tsep,Tmin⟩ := exists_minSeparator (deleteEdges G {(v,w)}) A B  
-    have : (#T) = (#S) ∨ (#T) < (#S) := Iff.mp le_iff_eq_or_lt (min_Separator_ofDelete_le ⟨hsep,hmin⟩ ⟨Tsep,Tmin⟩)
-    cases' this with heq hle 
-    · specialize ih Tsep Tmin 
-      rw [← heq] 
-      obtain ⟨C,hC⟩ := ih 
-      use Connector.ofDeleteEdge C 
-      rw [← hC]
-      rw [Connector_card_eq_card_firsts, Connector_card_eq_card_firsts] 
-      apply connector_ofDeleteEdge_firsts_eq  
-    · sorry
-
 lemma setCardAddOneMem (T : Set V) (u : V) (h: ¬ u ∈ T) : (#(T ∪ {u} : Set V)) = (#T) + 1 := by
   have disjoint: Disjoint T {u} := by
     simpa
-    -- rw [Set.disjoint_iff]
-    -- rintro x ⟨hx, rfl⟩ 
-    -- contradiction
 
   rw [ Cardinal.mk_union_of_disjoint disjoint]
   simp only [Cardinal.mk_fintype, Fintype.card_ofSubsingleton, Nat.cast_one]
@@ -560,3 +537,83 @@ lemma minSeparator_delete_card_atMost (u v : V) (G : Digraph V) (A B S T: Set V)
   apply minS.2 (T ∪ {u}) 
   exact h
 
+lemma edge_fst_mem_support (p : Walk G u v) (he : (x,y) ∈ p.edges) : x ∈ p.support := by
+  induction p 
+  · simp at he
+  · rename_i u v w  h p IH 
+    simp 
+    have h : x = u ∨ ¬ x = u := em _ 
+    cases h 
+    left
+    simpa 
+    right 
+    apply IH 
+    simp at he 
+    rename_i hn 
+    cases he 
+    rename_i h 
+    exfalso
+    exact hn h.1  
+    assumption
+  
+theorem Menger [Finite V] {G : Digraph V} (hsep : IsSeparator G A B S) (hmin : ∀ T, IsSeparator G A B T → (#T) ≥ (#S)) :
+    ∃ C : Connector G A B, (#C.paths) = (#S) := by
+  induction G using Digraph.deleteEdges_induction generalizing A B S with
+  | hbot =>  
+    exact base_case' hsep hmin 
+  | hdelete G v w hvw ih => 
+    obtain ⟨T,Tsep,Tmin⟩ := exists_minSeparator (deleteEdges G {(v,w)}) A B  
+    have : (#T) = (#S) ∨ (#T) < (#S) := Iff.mp le_iff_eq_or_lt (min_Separator_ofDelete_le ⟨hsep,hmin⟩ ⟨Tsep,Tmin⟩)
+    cases' this with heq hle 
+    · specialize ih Tsep Tmin 
+      rw [← heq] 
+      obtain ⟨C,hC⟩ := ih 
+      use Connector.ofDeleteEdge C 
+      rw [← hC]
+      rw [Connector_card_eq_card_firsts, Connector_card_eq_card_firsts] 
+      apply connector_ofDeleteEdge_firsts_eq  
+    · have : (#T) + 1 = (#S) := by
+        have Tplusvsep : IsSeparator G A B (T ∪ {v}) := by 
+          rw [IsSeparator] 
+          intro a ha b hb p 
+          have : (v,w) ∈ p.1.edges ∨ ¬ (v,w) ∈ p.1.edges := by
+            exact em _ 
+          cases' this with h1 h2
+          · use v
+            simp 
+            exact edge_fst_mem_support (p.1) h1
+          · rw [IsSeparator] at Tsep 
+            specialize Tsep a ha b hb _ 
+            unfold Path 
+            let p' : Walk (G.deleteEdges {(v,w)}) a b := p.1.transfer (G.deleteEdges {(v,w)}) (by 
+             intro e he 
+             rw [(deleteEdges G {(v, w)}).mem_edgeSet,deleteEdges_adj]
+             constructor
+             · rw [← G.mem_edgeSet]  
+               apply Walk.edges_subset_edgeSet p.1 he 
+             · simp 
+               intro hvw
+               apply h2
+               rw [← hvw] 
+               exact he  
+               )   
+            exact ⟨p',Walk.IsPath.transfer _ p.2⟩ 
+            obtain ⟨s,hs1,hs2⟩ := Tsep
+            use s 
+            constructor
+            · simp [hs1] 
+            · simp at hs2
+              exact hs2  
+        have : (#T) + 1 ≤ (#S) := by 
+          exact ge_trans (Order.succ_le_of_lt hle) (Cardinal.add_one_le_succ (#T)) 
+        have := hmin (T ∪ {v}) Tplusvsep 
+        have : (#↑(T ∪ {v})) ≤ (#↑T) + 1 := by
+          have temp : (v ∈ T ∨ ¬ v ∈ T) := by exact em _ 
+          cases' temp with hv hv 
+          · rw [setCardAddOneMem' T v hv] 
+            simp
+          · rw [setCardAddOneMem T v hv]  
+        apply le_antisymm 
+        · simpa
+        · exact ge_trans this (hmin (T ∪ {v}) Tplusvsep)
+      sorry
